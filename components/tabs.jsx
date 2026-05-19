@@ -213,13 +213,14 @@ const TabNEO = () => {
 const TabSolar = () => {
   const { donki } = useData();
   const drawer = useDrawer();
+  const [hoveredIdx, setHoveredIdx] = React.useState(null);
   return (
     <div style={{ width:'100%', height:'100%', display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap: 12, padding: 12, boxSizing:'border-box' }}>
       <div style={{ border:'1px solid var(--hud-hairline)', padding: 12, display:'flex', flexDirection:'column' }}>
         <HudLabel size={10}>SOLAR · FLARE COMPASS</HudLabel>
         <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
           <svg width="300" height="300" viewBox="0 0 220 220" fill="none">
-            <path d="M 110 10 A 100 100 0 1 1 30 160" stroke="var(--hud-cool)" strokeWidth="18" opacity="0.7" />
+            <path d="M 110 10 A 100 100 0 1 1 23.4 160" stroke="var(--hud-cool)" strokeWidth="18" strokeLinecap="round" opacity="0.7" />
             {[80,60,40].map(r => <circle key={r} cx="110" cy="110" r={r} stroke="var(--hud-hairline)" />)}
             <g style={{ animation:'hud-rot 40s linear infinite', transformOrigin:'110px 110px' }}>
               {Array.from({ length: 60 }).map((_, i) => {
@@ -242,14 +243,26 @@ const TabSolar = () => {
           <svg width="300" height="300" viewBox="0 0 240 240" fill="none">
             {[100, 80, 60, 42].map((r, i) => <circle key={i} cx="120" cy="120" r={r} stroke="var(--hud-hairline)" />)}
             {Array.from({ length: 36 }).map((_, i) => {
+              const eventIdx = i % donki.length;
+              const event = donki[eventIdx];
               const a0 = (i/36)*Math.PI*2, a1 = a0 + (Math.PI*2/36)*0.85;
-              const r1 = 64, r2 = 72 + (donki[i % donki.length].intensity)*20;
+              const r1 = 64, r2 = 72 + event.intensity*20;
               const p1 = [120+Math.cos(a0)*r1, 120+Math.sin(a0)*r1];
               const p2 = [120+Math.cos(a1)*r1, 120+Math.sin(a1)*r1];
               const p3 = [120+Math.cos(a1)*r2, 120+Math.sin(a1)*r2];
               const p4 = [120+Math.cos(a0)*r2, 120+Math.sin(a0)*r2];
-              const hot = donki[i % donki.length].intensity > 0.6;
-              return <polygon key={i} points={`${p1.join(',')} ${p2.join(',')} ${p3.join(',')} ${p4.join(',')}`} fill={hot?'var(--hud-accent)':'var(--hud-cool)'} opacity={0.4 + donki[i%donki.length].intensity*0.6} />;
+              const hot = event.intensity > 0.6;
+              const highlighted = hoveredIdx === eventIdx;
+              return <polygon
+                key={i}
+                points={`${p1.join(',')} ${p2.join(',')} ${p3.join(',')} ${p4.join(',')}`}
+                fill={highlighted || hot ? 'var(--hud-accent)' : 'var(--hud-cool)'}
+                opacity={highlighted ? 1 : 0.4 + event.intensity*0.6}
+                style={{ cursor: 'pointer', transition: 'opacity 0.15s, fill 0.15s' }}
+                onMouseEnter={() => setHoveredIdx(eventIdx)}
+                onMouseLeave={() => setHoveredIdx(null)}
+                onClick={() => drawer.open(<DonkiDetail event={event} />)}
+              />;
             })}
             <g style={{ animation:'hud-rot 60s linear infinite', transformOrigin:'120px 120px' }}>
               {Array.from({ length: 72 }).map((_, i) => {
@@ -265,7 +278,15 @@ const TabSolar = () => {
         <HudLabel size={10}>EVENT · LOG · 30D</HudLabel>
         <div style={{ marginTop: 10, display:'flex', flexDirection:'column', gap: 8 }}>
           {donki.map((d, i) => (
-            <div key={i} onClick={() => drawer.open(<DonkiDetail event={d} />)} className="hud-clickable" style={{ display:'grid', gridTemplateColumns:'46px 1fr auto', gap: 8, padding: 6, borderBottom:'1px solid var(--hud-hairline-soft)', alignItems:'center', cursor:'pointer' }}>
+            <div key={i}
+                 onClick={() => drawer.open(<DonkiDetail event={d} />)}
+                 onMouseEnter={() => setHoveredIdx(i)}
+                 onMouseLeave={() => setHoveredIdx(null)}
+                 className="hud-clickable"
+                 style={{ display:'grid', gridTemplateColumns:'46px 1fr auto', gap: 8, padding: 6, borderBottom:'1px solid var(--hud-hairline-soft)', alignItems:'center', cursor:'pointer',
+                   background: hoveredIdx === i ? 'rgba(232,122,42,0.12)' : undefined,
+                   boxShadow: hoveredIdx === i ? 'inset 0 0 0 1px var(--hud-accent)' : undefined,
+                 }}>
               <HudChip tone={d.intensity>0.6?'hot':d.intensity>0.35?'cool':'steel'} solid={d.intensity>0.8}>{d.type}</HudChip>
               <div>
                 <HudMono size={9} tone="ink">{d.class || (d.speed_kms && `${d.speed_kms}km/s`) || (d.kp_index && `Kp${d.kp_index}`) || '—'}</HudMono>
