@@ -1,0 +1,282 @@
+/* ═══════════════════════════════════════════════════════════
+   OBLIVION HUD — design tokens + primitives
+   Reference: GMunk's work for Oblivion (2013)
+   ═══════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&family=Barlow+Condensed:wght@200;300;400;500;600;700&display=swap');
+
+:root {
+  /* palette — warm black base, cream-white primary, amber accent, steel secondary */
+  --hud-bg:        #0a0a0a;
+  --hud-bg-deep:   #050505;
+  --hud-panel:     rgba(18, 18, 20, 0.65);
+  --hud-ink:       #f5f1e8;   /* primary — warm near-white */
+  --hud-ink-dim:   #c9c4b8;
+  --hud-steel:     #8a9199;   /* secondary — cool steel */
+  --hud-steel-dim: #4a5058;
+  --hud-accent:    #e87a2a;   /* warm amber — danger / live / hot */
+  --hud-accent-2:  #d84a1a;   /* redder amber — alert */
+  --hud-cool:      #6ba0b8;   /* cool teal — telemetry */
+  --hud-grid:      rgba(200, 195, 180, 0.06);
+  --hud-grid-2:    rgba(200, 195, 180, 0.12);
+  --hud-hairline:  rgba(245, 241, 232, 0.22);
+  --hud-hairline-soft: rgba(245, 241, 232, 0.08);
+
+  /* type */
+  --font-display: 'Barlow Condensed', 'Rajdhani', sans-serif;
+  --font-sans:    'Rajdhani', sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+}
+
+.hud {
+  background: var(--hud-bg);
+  color: var(--hud-ink);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "tnum" 1, "ss01" 1;
+}
+
+/* labels — wide-tracked, small, UPPERCASE */
+.hud-label {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--hud-steel);
+}
+.hud-label--ink { color: var(--hud-ink-dim); }
+.hud-label--hot { color: var(--hud-accent); }
+.hud-label--tiny { font-size: 8px; letter-spacing: 0.3em; }
+
+/* values — condensed, big, thin */
+.hud-value {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+.hud-mono {
+  font-family: var(--font-mono);
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+}
+
+/* hairline borders */
+.hud-hair { border: 1px solid var(--hud-hairline); }
+.hud-hair-b { border-bottom: 1px solid var(--hud-hairline); }
+.hud-hair-t { border-top: 1px solid var(--hud-hairline); }
+.hud-hair-l { border-left: 1px solid var(--hud-hairline); }
+.hud-hair-r { border-right: 1px solid var(--hud-hairline); }
+
+/* corner brackets — the Oblivion signature */
+.hud-bracket {
+  position: relative;
+}
+.hud-bracket::before,
+.hud-bracket::after {
+  content: '';
+  position: absolute;
+  width: 10px; height: 10px;
+  border: 1px solid var(--hud-ink);
+  border-right: none; border-bottom: none;
+  top: 0; left: 0;
+  pointer-events: none;
+}
+.hud-bracket::after {
+  top: auto; left: auto; bottom: 0; right: 0;
+  border: 1px solid var(--hud-ink);
+  border-left: none; border-top: none;
+}
+
+/* all four corners variant — L-brackets on all 4 corners.
+   Implementation: ::before = TL + BR via borders; background-image paints TR + BL via linear gradients. */
+.hud-bracket-4 {
+  position: relative;
+  background-image:
+    linear-gradient(to right, var(--hud-ink) 0 10px, transparent 10px 100%),   /* TR horizontal */
+    linear-gradient(to bottom, var(--hud-ink) 0 10px, transparent 10px 100%),  /* TR vertical */
+    linear-gradient(to right, var(--hud-ink) 0 10px, transparent 10px 100%),   /* BL horizontal */
+    linear-gradient(to bottom, var(--hud-ink) 0 10px, transparent 10px 100%);  /* BL vertical */
+  background-repeat: no-repeat;
+  background-size:
+    10px 1px,   /* TR top edge */
+    1px 10px,   /* TR right edge */
+    10px 1px,   /* BL bottom edge */
+    1px 10px;   /* BL left edge */
+  background-position:
+    top right,
+    top right,
+    bottom left,
+    bottom left;
+}
+.hud-bracket-4::before,
+.hud-bracket-4::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+}
+.hud-bracket-4::before {
+  top: 0; left: 0;
+  border-top: 1px solid var(--hud-ink);
+  border-left: 1px solid var(--hud-ink);
+}
+.hud-bracket-4::after {
+  bottom: 0; right: 0;
+  border-bottom: 1px solid var(--hud-ink);
+  border-right: 1px solid var(--hud-ink);
+}
+
+/* dotted/dashed grid fills */
+.hud-dots {
+  background-image: radial-gradient(circle, var(--hud-grid-2) 0.5px, transparent 0.6px);
+  background-size: 8px 8px;
+}
+.hud-grid-bg {
+  background-image:
+    linear-gradient(to right, var(--hud-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--hud-grid) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* tick rows */
+.hud-ticks {
+  height: 6px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--hud-hairline) 0 1px,
+    transparent 1px 6px
+  );
+}
+.hud-ticks-lg {
+  height: 10px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--hud-hairline) 0 1px,
+    transparent 1px 4px,
+    var(--hud-hairline) 4px 5px,
+    transparent 5px 12px
+  );
+}
+
+/* scanning line */
+@keyframes hud-scan {
+  0%   { transform: translateY(0%); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+.hud-scan {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--hud-accent) 50%, transparent);
+  animation: hud-scan 6s linear infinite;
+  pointer-events: none;
+}
+
+/* rotating ring */
+@keyframes hud-rot { to { transform: rotate(360deg); } }
+@keyframes hud-rot-rev { to { transform: rotate(-360deg); } }
+.hud-rot { animation: hud-rot 40s linear infinite; transform-origin: center; }
+.hud-rot-slow { animation: hud-rot 80s linear infinite; transform-origin: center; }
+.hud-rot-rev { animation: hud-rot-rev 60s linear infinite; transform-origin: center; }
+
+@keyframes hud-blink {
+  0%, 45%, 100% { opacity: 1; }
+  50%, 95%      { opacity: 0.2; }
+}
+.hud-blink { animation: hud-blink 1.6s ease-in-out infinite; }
+
+@keyframes hud-blink-fast {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+.hud-cursor { animation: hud-blink-fast 1s steps(2) infinite; }
+
+@keyframes hud-readout {
+  0%   { opacity: 0.3; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+.hud-pulse { animation: hud-readout 2.4s ease-in-out infinite; }
+
+/* bar graphs */
+.hud-bar {
+  height: 100%;
+  background-image: repeating-linear-gradient(
+    to right,
+    currentColor 0 2px,
+    transparent 2px 4px
+  );
+}
+
+/* frame wrap — full-bleed dark screen */
+.hud-frame {
+  background:
+    radial-gradient(ellipse at center, #0e0e0f 0%, var(--hud-bg-deep) 80%),
+    var(--hud-bg);
+  position: relative;
+  overflow: hidden;
+}
+.hud-frame::before {
+  /* subtle film grain */
+  content: '';
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.9 0 0 0 0 0.85 0 0 0 0 0.75 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 1;
+}
+.hud-frame > * { position: relative; z-index: 2; }
+
+/* reticle centered */
+.hud-reticle {
+  position: relative;
+}
+.hud-reticle::before,
+.hud-reticle::after {
+  content: '';
+  position: absolute;
+  background: var(--hud-ink);
+}
+.hud-reticle::before { left: 50%; top: 40%; bottom: 40%; width: 1px; transform: translateX(-0.5px); }
+.hud-reticle::after  { top: 50%; left: 40%; right: 40%;  height: 1px; transform: translateY(-0.5px); }
+
+/* status chip */
+.hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  color: var(--hud-ink);
+  background: rgba(0,0,0,0.4);
+}
+.hud-chip--hot  { color: var(--hud-accent); background: rgba(232,122,42,0.1); }
+.hud-chip--cool { color: var(--hud-cool); }
+.hud-chip--dim  { color: var(--hud-steel); }
+.hud-chip--solid { background: var(--hud-accent); color: var(--hud-bg); border-color: var(--hud-accent); }
+
+/* utility */
+.hud-row { display: flex; align-items: center; }
+.hud-col { display: flex; flex-direction: column; }
+.hud-gap-1 { gap: 4px; } .hud-gap-2 { gap: 8px; } .hud-gap-3 { gap: 12px; } .hud-gap-4 { gap: 16px; } .hud-gap-6 { gap: 24px; }
+
+/* clickable — subtle hover highlight + outline */
+.hud-clickable { transition: background-color 0.15s, box-shadow 0.15s; }
+.hud-clickable:hover {
+  background-color: rgba(232, 122, 42, 0.12) !important;
+  box-shadow: inset 0 0 0 1px var(--hud-accent);
+}

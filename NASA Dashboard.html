@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NASA · TET VISION Dashboard</title>
+<link rel="stylesheet" href="styles/hud.css" />
+<style>
+  html, body { margin: 0; padding: 0; background: #050505; overflow: hidden; font-family: 'Rajdhani', system-ui, sans-serif; }
+  #root { width: 100vw; height: 100vh; }
+  .tweaks { position: fixed; bottom: 16px; right: 16px; z-index: 999; background: rgba(10,10,10,0.94); color: #f5f1e8; border: 1px solid rgba(245,241,232,0.3); padding: 14px 16px; width: 260px; font-family: 'Rajdhani', sans-serif; display: none; }
+  .tweaks.open { display: block; }
+  .tweaks.minimized { padding: 8px 12px; width: auto; }
+  .tweaks.minimized .tweaks-body { display: none; }
+  .tweaks-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .tweaks h4 { margin: 0; font-family:'Barlow Condensed',sans-serif; font-weight: 400; letter-spacing: 0.3em; text-transform: uppercase; font-size: 11px; color: #e87a2a; }
+  .tweaks .tweaks-toggle { background: transparent; border: 1px solid rgba(245,241,232,0.25); color: #8a9199; width: 22px; height: 18px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; transition: color 0.15s, border-color 0.15s; }
+  .tweaks .tweaks-toggle:hover { color: #e87a2a; border-color: #e87a2a; }
+  .tweaks-body { margin-top: 8px; }
+  .tweaks label { display: block; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: #8a9199; margin: 10px 0 4px; }
+  .tweaks input[type=range] { width: 100%; background: #1a1a1a; color: #f5f1e8; border: 1px solid rgba(245,241,232,0.2); }
+  .tweaks .swatches { display: flex; gap: 4px; margin-top: 4px; }
+  .tweaks .swatch { width: 28px; height: 20px; cursor: pointer; border: 1px solid rgba(245,241,232,0.3); }
+  .tweaks .swatch.active { outline: 2px solid currentColor; outline-offset: 2px; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
+<script src="data/nasa.js?v=5"></script>
+<script src="data/api-client.js?v=5"></script>
+<script type="text/babel" src="components/hud.jsx"></script>
+<script type="text/babel" src="components/extras.jsx"></script>
+<script type="text/babel" src="components/globe.jsx"></script>
+<script type="text/babel" src="components/chrome.jsx"></script>
+<script type="text/babel" src="components/tabs.jsx"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<div class="tweaks" id="tweaks">
+  <div class="tweaks-head">
+    <h4>Tweaks</h4>
+    <button class="tweaks-toggle" id="tw-toggle" title="Minimize" aria-label="Toggle Tweaks panel">
+      <svg id="tw-toggle-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6">
+        <polyline points="2,4 5,7 8,4" />
+      </svg>
+    </button>
+  </div>
+  <div class="tweaks-body">
+    <label>Accent</label>
+  <div class="swatches" id="tw-accent">
+    <div class="swatch active" data-c="#ff4d1f" style="background:#ff4d1f;color:#ff4d1f"></div>
+    <div class="swatch" data-c="#e87a2a" style="background:#e87a2a;color:#e87a2a"></div>
+    <div class="swatch" data-c="#ffc247" style="background:#ffc247;color:#ffc247"></div>
+    <div class="swatch" data-c="#4fd4ff" style="background:#4fd4ff;color:#4fd4ff"></div>
+    <div class="swatch" data-c="#7bff8a" style="background:#7bff8a;color:#7bff8a"></div>
+  </div>
+  <label>Grain</label>
+  <input type="range" id="tw-grain" min="0" max="1" step="0.05" value="0.5" />
+  <label>Motion</label>
+  <div class="swatches" id="tw-motion">
+    <div class="swatch active" data-m="1" style="background:#333;color:#e87a2a;text-align:center;font-size:10px;line-height:20px">ON</div>
+    <div class="swatch" data-m="0" style="background:#333;color:#8a9199;text-align:center;font-size:10px;line-height:20px">OFF</div>
+  </div>
+  </div>
+</div>
+
+<script type="text/babel" data-presets="env,react">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "#ff4d1f",
+  "grain": 1,
+  "motion": 1,
+  "tweaksMinimized": false
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tab, setTab] = React.useState(() => localStorage.getItem('nasa-tab') || 'overview');
+  const [accent, setAccent] = React.useState(TWEAK_DEFAULTS.accent);
+  const [grain, setGrain] = React.useState(TWEAK_DEFAULTS.grain);
+  const [motion, setMotion] = React.useState(TWEAK_DEFAULTS.motion);
+  const [tweaksMin, setTweaksMin] = React.useState(() => {
+    const v = localStorage.getItem('nasa-tweaks-min');
+    return v == null ? TWEAK_DEFAULTS.tweaksMinimized : v === '1';
+  });
+  React.useEffect(() => { localStorage.setItem('nasa-tweaks-min', tweaksMin ? '1' : '0'); }, [tweaksMin]);
+  React.useEffect(() => {
+    const el = document.getElementById('tweaks');
+    if (!el) return;
+    el.classList.toggle('minimized', tweaksMin);
+    const icon = document.getElementById('tw-toggle-icon');
+    if (icon) {
+      // chevron up when minimized (expand), chevron down when open (minimize)
+      icon.innerHTML = tweaksMin
+        ? '<polyline points="2,6 5,3 8,6" />'
+        : '<polyline points="2,4 5,7 8,4" />';
+    }
+    const btn = document.getElementById('tw-toggle');
+    if (btn) btn.title = tweaksMin ? 'Expand' : 'Minimize';
+  }, [tweaksMin]);
+  React.useEffect(() => { localStorage.setItem('nasa-tab', tab); }, [tab]);
+  React.useEffect(() => { document.documentElement.style.setProperty('--hud-accent', accent); }, [accent]);
+  React.useEffect(() => {
+    const id = 'grain-o'; let s = document.getElementById(id);
+    if (!s) { s = document.createElement('style'); s.id = id; document.head.appendChild(s); }
+    s.textContent = `.hud-frame::before { opacity: ${grain}; } ${motion ? '' : '*, *::before, *::after { animation: none !important; }'}`;
+  }, [grain, motion]);
+
+  React.useEffect(() => {
+    const h = (e) => {
+      if (e.data?.type === '__activate_edit_mode') document.getElementById('tweaks').classList.add('open');
+      if (e.data?.type === '__deactivate_edit_mode') document.getElementById('tweaks').classList.remove('open');
+    };
+    window.addEventListener('message', h);
+    window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+    return () => window.removeEventListener('message', h);
+  }, []);
+
+  React.useEffect(() => {
+    const g = document.getElementById('tw-grain');
+    const a = document.getElementById('tw-accent');
+    const m = document.getElementById('tw-motion');
+    const tbtn = document.getElementById('tw-toggle');
+    g.value = grain;
+    const og = (e) => { setGrain(+e.target.value); window.parent.postMessage({ type:'__edit_mode_set_keys', edits:{ grain: +e.target.value } }, '*'); };
+    const oa = (e) => { const s = e.target.closest('.swatch'); if (!s) return; a.querySelectorAll('.swatch').forEach(x => x.classList.toggle('active', x===s)); setAccent(s.dataset.c); window.parent.postMessage({ type:'__edit_mode_set_keys', edits:{ accent: s.dataset.c } }, '*'); };
+    const om = (e) => { const s = e.target.closest('.swatch'); if (!s) return; m.querySelectorAll('.swatch').forEach(x => x.classList.toggle('active', x===s)); setMotion(+s.dataset.m); window.parent.postMessage({ type:'__edit_mode_set_keys', edits:{ motion: +s.dataset.m } }, '*'); };
+    const ot = () => setTweaksMin(v => !v);
+    g.addEventListener('input', og); a.addEventListener('click', oa); m.addEventListener('click', om); tbtn?.addEventListener('click', ot);
+    return () => { g.removeEventListener('input', og); a.removeEventListener('click', oa); m.removeEventListener('click', om); tbtn?.removeEventListener('click', ot); };
+  }, [grain]);
+
+  const tabMap = { overview: TabOverview, earth: TabEarth, neo: TabNEO, solar: TabSolar, deep: TabDeep, mars: TabMars };
+  const labelMap = { overview: 'Overview', earth: 'Earth Observation', neo: 'NEO Track', solar: 'Space Weather', deep: 'Deep Space', mars: 'Mars' };
+  const TabView = tabMap[tab] || TabOverview;
+
+  return (
+    <DataProvider>
+      <DrawerProvider>
+        <Chrome tab={tab} setTab={setTab}>
+          <div data-screen-label={labelMap[tab]} style={{ width:'100%', height:'100%' }}>
+            <TabView />
+          </div>
+        </Chrome>
+      </DrawerProvider>
+    </DataProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
