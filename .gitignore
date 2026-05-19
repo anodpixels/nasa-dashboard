@@ -1,2 +1,4 @@
 .DS_Store
 .omc/
+.playwright-mcp/
+overview-check.png
