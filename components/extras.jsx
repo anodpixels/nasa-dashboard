@@ -56,6 +56,56 @@ const APODImage = ({ apod }) => {
   );
 };
 
+// Deep-sky image with the same URL-cascade behavior as APOD.
+// Accepts a curated `entry` from window.NASA.deepsky and falls
+// through every URL before showing the procedural starfield.
+const DeepSkyImage = ({ entry }) => {
+  const urls = React.useMemo(() => (entry?.urls || []).filter(Boolean), [entry]);
+  const [idx, setIdx] = React.useState(0);
+  const [failed, setFailed] = React.useState(false);
+
+  React.useEffect(() => { setIdx(0); setFailed(false); }, [entry?.id]);
+
+  if (failed || idx >= urls.length) {
+    return (
+      <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse 60% 50% at 60% 40%, #2a1a3a 0%, #0a0a1a 60%, #000 100%)', overflow:'hidden' }}>
+        <svg width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style={{ opacity: 0.85 }}>
+          <defs>
+            <radialGradient id="gxd" cx="0.6" cy="0.45" r="0.4">
+              <stop offset="0" stopColor="#ffd78a" stopOpacity="0.6" />
+              <stop offset="0.3" stopColor="#e87a2a" stopOpacity="0.35" />
+              <stop offset="1" stopColor="#1a0a2a" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          <ellipse cx="600" cy="270" rx="320" ry="90" fill="url(#gxd)" transform="rotate(-18 600 270)" />
+          <ellipse cx="600" cy="270" rx="260" ry="40" fill="#ffd78a" opacity="0.12" transform="rotate(-18 600 270)" />
+          <circle cx="600" cy="270" r="18" fill="#fff6d5" opacity="0.7" />
+          {Array.from({ length: 220 }).map((_, i) => {
+            const x = (i * 97) % 1000;
+            const y = (i * 163) % 600;
+            const r = (i % 7 === 0) ? 1.6 : 0.6;
+            return <circle key={i} cx={x} cy={y} r={r} fill="#f5f1e8" opacity={0.3 + (i%5)*0.15} />;
+          })}
+        </svg>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      key={urls[idx]}
+      src={urls[idx]}
+      referrerPolicy="no-referrer"
+      onError={() => {
+        if (idx + 1 < urls.length) setIdx(idx + 1);
+        else setFailed(true);
+      }}
+      style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover', opacity: 0.95, filter:'contrast(1.06)' }}
+      alt={entry?.title || ''}
+    />
+  );
+};
+
 // ─────────────────────────────────────────────────────────────
 // Tooltip — hover to reveal plain-English explanation
 // Wrap any element and pass `info` string.
@@ -389,8 +439,27 @@ const RoverPhotoDetail = ({ photo }) => (
   </div>
 );
 
+const DeepSkyDetail = ({ entry }) => (
+  <div>
+    <DrawerTitle kicker={`${entry.telescope} · ${entry.instrument}`} title={entry.title} sub={`${entry.target} · ${entry.year}`} />
+    {entry.urls?.[0] && (
+      <img src={entry.urls[0]} alt="" referrerPolicy="no-referrer"
+           style={{ width:'100%', marginBottom: 14, border:'1px solid var(--hud-hairline)' }} />
+    )}
+    <DrawerRow label="Target" value={entry.target} />
+    <DrawerRow label="Type" value={entry.target_type} />
+    <DrawerRow label="Constellation" value={entry.constellation} />
+    <DrawerRow label="Distance" value={entry.distance} tone="cool" />
+    <DrawerRow label="Right ascension" value={entry.ra} />
+    <DrawerRow label="Declination" value={entry.dec} />
+    <DrawerRow label="Telescope" value={`${entry.telescope} · ${entry.instrument}`} tone="hot" />
+    <DrawerRow label="Year" value={entry.year} />
+    <DrawerNote>{entry.blurb}</DrawerNote>
+  </div>
+);
+
 Object.assign(window, {
-  APODImage, Tip, InfoDot, DrawerProvider, DrawerCtx, useDrawer, GLOSSARY,
+  APODImage, DeepSkyImage, Tip, InfoDot, DrawerProvider, DrawerCtx, useDrawer, GLOSSARY,
   DrawerTitle, DrawerRow, DrawerNote,
-  ISSDetail, APODDetail, NEODetail, CrewDetail, SpaceWxDetail, DonkiDetail, ExoplanetDetail, MarsDetail, RoverPhotoDetail, EarthDetail,
+  ISSDetail, APODDetail, NEODetail, CrewDetail, SpaceWxDetail, DonkiDetail, ExoplanetDetail, MarsDetail, RoverPhotoDetail, EarthDetail, DeepSkyDetail,
 });

@@ -23,7 +23,13 @@ function DataProvider({ children }) {
     window.NASA_API.fetchMarsPhotos().then(d => { setMarsPhotos(d); setLoading(l => ({...l, marsPhotos:false})); });
   }, []);
 
-  const value = { apod, neos, donki, epic, marsPhotos, loading, iss: window.NASA.iss, mars: window.NASA.mars, exoplanets: window.NASA.exoplanets, fireballs: window.NASA.fireballs };
+  // Pick one curated deep-sky image for the session — stable across tab switches
+  const [deepsky] = React.useState(() => {
+    const list = window.NASA.deepsky || [];
+    return list[Math.floor(Math.random() * list.length)] || null;
+  });
+
+  const value = { apod, neos, donki, epic, marsPhotos, loading, iss: window.NASA.iss, mars: window.NASA.mars, exoplanets: window.NASA.exoplanets, fireballs: window.NASA.fireballs, deepsky };
   return <DataCtx.Provider value={value}>{children}</DataCtx.Provider>;
 }
 
@@ -188,12 +194,13 @@ const StatusBar = () => {
 // ═════════════════════════════════════════════════════════════
 
 const TabOverview = () => {
-  const { apod, neos, donki, mars, loading } = useData();
+  const { apod, neos, donki, mars, deepsky, loading } = useData();
   const iss = useLiveISS();
   const drawer = useDrawer();
+  const [heroHover, setHeroHover] = React.useState(false);
 
   const openISSDetail = () => drawer.open(<ISSDetail iss={iss} />);
-  const openAPODDetail = () => drawer.open(<APODDetail apod={apod} />);
+  const openDeepSkyDetail = () => deepsky && drawer.open(<DeepSkyDetail entry={deepsky} />);
   const openNEODetail = (n) => drawer.open(<NEODetail neo={n} />);
   const openCrewDetail = (c) => drawer.open(<CrewDetail crew={c} />);
   const openSpaceWxDetail = () => drawer.open(<SpaceWxDetail donki={donki} />);
@@ -275,8 +282,12 @@ const TabOverview = () => {
 
       {/* CENTER — APOD HERO */}
       <div style={{ display:'flex', flexDirection:'column', gap: 8, minWidth: 0 }}>
-        <div onClick={openAPODDetail} className="hud-clickable" style={{ flex: 1, position:'relative', border:'1px solid var(--hud-hairline)', overflow:'hidden', background:'#000', cursor:'pointer' }}>
-          <APODImage apod={apod} />
+        <div onClick={openDeepSkyDetail}
+             onMouseEnter={() => setHeroHover(true)}
+             onMouseLeave={() => setHeroHover(false)}
+             className="hud-clickable"
+             style={{ flex: 1, position:'relative', border:'1px solid var(--hud-hairline)', overflow:'hidden', background:'#000', cursor:'pointer' }}>
+          {deepsky ? <DeepSkyImage entry={deepsky} /> : <APODImage apod={apod} />}
           <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.7))' }} />
 
           {/* Grid overlay */}
@@ -316,14 +327,48 @@ const TabOverview = () => {
 
           {/* Caption */}
           <div style={{ position:'absolute', bottom: 26, left: 32, right: 32 }}>
-            <HudLabel size={9} tone="hot">APOD · {apod.date || '—'}</HudLabel>
+            <HudLabel size={9} tone="hot">
+              {deepsky ? `${deepsky.telescope} · ${deepsky.instrument}` : `APOD · ${apod.date || '—'}`}
+            </HudLabel>
             <div style={{ marginTop: 3 }}>
-              <HudValue size={24}>{(apod.title || 'LOADING').toUpperCase()}</HudValue>
+              <HudValue size={24}>{((deepsky?.title) || apod.title || 'LOADING').toUpperCase()}</HudValue>
             </div>
             <HudMono size={9} tone="steel" style={{ display:'block', marginTop: 4, maxWidth: 500 }}>
-              {apod.copyright ? `© ${apod.copyright.replace(/\n/g,' ')}` : 'NASA / PUBLIC DOMAIN'}
+              {deepsky
+                ? `${deepsky.target} · ${deepsky.distance} · ${deepsky.year}`
+                : (apod.copyright ? `© ${apod.copyright.replace(/\n/g,' ')}` : 'NASA / PUBLIC DOMAIN')}
             </HudMono>
           </div>
+
+          {/* Hover info card — fades in on hero hover */}
+          {deepsky && (
+            <div style={{
+              position:'absolute', top: 22, left: 32, maxWidth: 320,
+              background:'rgba(10,10,10,0.88)',
+              border:'1px solid var(--hud-accent)',
+              padding:'12px 14px',
+              opacity: heroHover ? 1 : 0,
+              transform: `translateY(${heroHover ? 0 : -4}px)`,
+              transition:'opacity 0.18s ease, transform 0.18s ease',
+              pointerEvents:'none',
+              zIndex: 4,
+            }}>
+              <HudLabel size={9} tone="hot">{deepsky.target_type}</HudLabel>
+              <div style={{ marginTop: 4, marginBottom: 8 }}>
+                <HudValue size={14}>{deepsky.target.toUpperCase()}</HudValue>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap: 4, marginBottom: 8 }}>
+                <HudMono size={9} tone="steel">CONST · {deepsky.constellation}</HudMono>
+                <HudMono size={9} tone="steel">DIST · {deepsky.distance}</HudMono>
+                <HudMono size={9} tone="steel">RA · {deepsky.ra}</HudMono>
+                <HudMono size={9} tone="steel">DEC · {deepsky.dec}</HudMono>
+              </div>
+              <div style={{ fontFamily:'Rajdhani, sans-serif', fontSize: 11, lineHeight: 1.45, color:'var(--hud-ink-dim)' }}>
+                {deepsky.blurb}
+              </div>
+              <HudMono size={8} tone="hot" style={{ display:'block', marginTop: 8 }}>▸ CLICK FOR FULL DETAIL</HudMono>
+            </div>
+          )}
 
           <ScanField />
         </div>
@@ -331,7 +376,7 @@ const TabOverview = () => {
         {/* Bottom strip */}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap: 8, border:'1px solid var(--hud-hairline)', padding: 8 }}>
           {[
-            { label:'APOD·TITLE', val: apod.title?.slice(0, 18).toUpperCase() || '—', tone:'ink' },
+            { label: deepsky ? `${deepsky.telescope}·HERO` : 'APOD·TITLE', val: (deepsky?.title || apod.title)?.slice(0, 18).toUpperCase() || '—', tone:'ink' },
             { label:'NEOs·TODAY', val: neos.length, tone:'hot' },
             { label:'HAZARDOUS', val: neos.filter(n=>n.hazard).length, tone:'hot' },
             { label:'WX·EVENTS',  val: donki.length, tone:'cool' },

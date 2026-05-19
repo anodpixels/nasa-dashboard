@@ -1,0 +1,226 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e6]
+      - generic [ref=e9]:
+        - text: ONLINE
+        - generic [ref=e12]: TET·VISION · V2.4
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - img [ref=e15]
+        - generic [ref=e18]: NASA · DEEP SPACE NETWORK
+        - generic [ref=e19]: SYNC
+      - generic [ref=e21]: SESSION 6A0CEDDB · STATION·14 · MADRID DSN
+    - generic [ref=e22]:
+      - generic [ref=e23]: 23:10:19
+      - generic [ref=e24]: UTC · MD 20,757
+  - generic [ref=e25]:
+    - button "01 OVERVIEW ▸" [ref=e26] [cursor=pointer]:
+      - generic [ref=e28]: "01"
+      - generic [ref=e29]: OVERVIEW
+      - generic [ref=e30]: ▸
+    - button "02 EARTH·OBS" [ref=e31] [cursor=pointer]:
+      - generic [ref=e32]: "02"
+      - generic [ref=e33]: EARTH·OBS
+    - button "03 NEO·TRACK" [ref=e34] [cursor=pointer]:
+      - generic [ref=e35]: "03"
+      - generic [ref=e36]: NEO·TRACK
+    - button "04 SPACE·WX" [ref=e37] [cursor=pointer]:
+      - generic [ref=e38]: "04"
+      - generic [ref=e39]: SPACE·WX
+    - button "05 DEEP·SPACE" [ref=e40] [cursor=pointer]:
+      - generic [ref=e41]: "05"
+      - generic [ref=e42]: DEEP·SPACE
+    - button "06 MARS" [ref=e43] [cursor=pointer]:
+      - generic [ref=e44]: "06"
+      - generic [ref=e45]: MARS
+  - generic [ref=e48]:
+    - generic [ref=e49]:
+      - generic [ref=e50] [cursor=pointer]:
+        - generic [ref=e51]:
+          - generic [ref=e52]: LIVE · ISS
+          - generic [ref=e53]: ▸ MORE
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - generic [ref=e56]: LAT
+            - generic [ref=e57]: "-46.16"
+          - generic [ref=e58]:
+            - generic [ref=e59]: LON
+            - generic [ref=e60]: "147.5"
+          - generic [ref=e61]:
+            - generic [ref=e62]: ALT·KM
+            - generic [ref=e63]: "408.4"
+          - generic [ref=e64]:
+            - generic [ref=e65]: VEL·KMH
+            - generic [ref=e66]: "27582"
+        - generic [ref=e67]:
+          - generic [ref=e68]: ORBIT
+          - text: 121,482
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - generic [ref=e71]: CREW ROSTER
+          - generic [ref=e72]: 7·ACTIVE
+        - generic [ref=e73]:
+          - generic [ref=e74] [cursor=pointer]:
+            - generic [ref=e76]: O. Kononenko
+            - generic [ref=e78]: MD·342
+          - generic [ref=e79] [cursor=pointer]:
+            - generic [ref=e81]: N. Chub
+            - generic [ref=e83]: MD·342
+          - generic [ref=e84] [cursor=pointer]:
+            - generic [ref=e86]: T. Dyson
+            - generic [ref=e88]: MD·198
+          - generic [ref=e89] [cursor=pointer]:
+            - generic [ref=e91]: M. Maurer
+            - generic [ref=e93]: MD·71
+          - generic [ref=e94] [cursor=pointer]:
+            - generic [ref=e96]: S. Ayers
+            - generic [ref=e98]: MD·71
+          - generic [ref=e99] [cursor=pointer]:
+            - generic [ref=e101]: K. Nyberg
+            - generic [ref=e103]: MD·71
+          - generic [ref=e104] [cursor=pointer]:
+            - generic [ref=e106]: L. Wang
+            - generic [ref=e108]: MD·88
+      - generic [ref=e109] [cursor=pointer]:
+        - generic [ref=e110]:
+          - generic [ref=e111]: SPACE WX · KP
+          - generic [ref=e112]: G2·STORM
+        - generic [ref=e113]:
+          - generic "FLR — M4.2" [ref=e114]
+          - generic "CME — 812" [ref=e115]
+          - generic "GST — 6" [ref=e116]
+          - generic "FLR — X1.1" [ref=e117]
+          - generic "SEP — undefined" [ref=e118]
+          - generic "CME — 421" [ref=e119]
+          - generic "FLR — C8.4" [ref=e120]
+          - generic "RBE — undefined" [ref=e121]
+        - generic [ref=e122]:
+          - generic [ref=e123]: "-30D"
+          - generic [ref=e124]: 3·MAJ
+          - generic [ref=e125]: NOW
+      - generic [ref=e126] [cursor=pointer]:
+        - generic [ref=e127]:
+          - generic [ref=e129]: MARS · SOL·3721
+          - generic [ref=e130]: ▸
+        - generic [ref=e131]:
+          - generic [ref=e132]:
+            - text: T·AVG
+            - generic [ref=e133]: "-58.1°"
+          - generic [ref=e134]:
+            - generic [ref=e135]: PRESS
+            - text: "748"
+    - generic [ref=e136]:
+      - generic [ref=e137] [cursor=pointer]:
+        - img "Pillars of Creation" [ref=e138]
+        - img [ref=e140]
+        - generic [ref=e141]:
+          - generic [ref=e142]: A
+          - generic [ref=e143]: B
+          - generic [ref=e144]: C
+          - generic [ref=e145]: D
+          - generic [ref=e146]: E
+          - generic [ref=e147]: F
+          - generic [ref=e148]: G
+          - generic [ref=e149]: H
+        - generic [ref=e150]:
+          - generic [ref=e151]: "1"
+          - generic [ref=e152]: "2"
+          - generic [ref=e153]: "3"
+          - generic [ref=e154]: "4"
+          - generic [ref=e155]: "5"
+          - generic [ref=e156]: "6"
+          - generic [ref=e157]: "7"
+          - generic [ref=e158]: "8"
+          - generic [ref=e159]: "9"
+          - generic [ref=e160]: "10"
+          - generic [ref=e161]: "11"
+          - generic [ref=e162]: "12"
+          - generic [ref=e163]: "13"
+        - img [ref=e169]
+        - img [ref=e175]
+        - generic [ref=e180]:
+          - text: Hubble · WFC3
+          - generic [ref=e181]: PILLARS OF CREATION
+          - generic [ref=e182]: Eagle Nebula (M16) · 6,500 ly · 2014
+        - generic:
+          - text: Star-forming region
+          - generic: EAGLE NEBULA (M16)
+          - generic:
+            - generic: CONST · Serpens
+            - generic: DIST · 6,500 ly
+            - generic: RA · 18h 18m 48s
+            - generic: DEC · −13° 49′
+          - generic: The 25th-anniversary revisit of the iconic 1995 image — same nebula, same pillars, twenty years of erosion captured at higher resolution and in sharper visible-light detail.
+          - generic: ▸ CLICK FOR FULL DETAIL
+      - generic [ref=e183]:
+        - generic [ref=e184]:
+          - text: Hubble·HERO
+          - generic [ref=e185]: PILLARS OF CREATIO
+        - generic [ref=e186]:
+          - text: NEOs·TODAY
+          - generic [ref=e187]: "12"
+        - generic [ref=e188]:
+          - text: HAZARDOUS
+          - generic [ref=e189]: "3"
+        - generic [ref=e190]:
+          - text: WX·EVENTS
+          - generic [ref=e191]: "8"
+    - generic [ref=e192]:
+      - generic [ref=e193]:
+        - generic [ref=e194]:
+          - generic [ref=e195]: DATALINKS
+          - generic [ref=e196]: "8"
+        - generic [ref=e197]:
+          - generic "FLR · intensity 62%" [ref=e198]
+          - generic "CME · intensity 74%" [ref=e199]
+          - generic "GST · intensity 58%" [ref=e200]
+          - generic "FLR · intensity 91%" [ref=e201]
+          - generic "SEP · intensity 41%" [ref=e202]
+          - generic "CME · intensity 32%" [ref=e203]
+          - generic "FLR · intensity 28%" [ref=e204]
+          - generic "RBE · intensity 45%" [ref=e205]
+      - generic [ref=e206]:
+        - generic [ref=e207]:
+          - generic [ref=e208]: NEO · PRIORITY
+          - generic [ref=e209]: FEED
+        - generic [ref=e210]:
+          - generic [ref=e211] [cursor=pointer]:
+            - generic [ref=e213]: 2023 FY14
+            - generic [ref=e214]: 11.1LD
+          - generic [ref=e215] [cursor=pointer]:
+            - generic [ref=e217]: 1036 Ganymed
+            - generic [ref=e218]: 146.0LD
+          - generic [ref=e219] [cursor=pointer]:
+            - generic [ref=e221]: 2010 PR10
+            - generic [ref=e222]: 4.9LD
+          - generic [ref=e223] [cursor=pointer]:
+            - generic [ref=e225]: 2018 RC
+            - generic [ref=e226]: 2.3LD
+          - generic [ref=e227] [cursor=pointer]:
+            - generic [ref=e229]: 2011 UL21
+            - generic [ref=e230]: 17.4LD
+          - generic [ref=e231] [cursor=pointer]:
+            - generic [ref=e233]: 2002 VX94
+            - generic [ref=e234]: 8.1LD
+      - generic [ref=e235]:
+        - generic [ref=e236]: ORBITAL·PHASE
+        - generic [ref=e237]:
+          - img [ref=e238]
+          - generic [ref=e300]:
+            - text: "061"
+            - generic [ref=e301]: DEG · ORBIT
+      - generic [ref=e302]:
+        - generic [ref=e303]:
+          - generic [ref=e304]: FEED · STREAM
+          - generic [ref=e305]: ● REC
+        - generic [ref=e306]: ▊
+  - generic [ref=e307]:
+    - generic [ref=e308]:
+      - generic [ref=e310]: PKT·0x4A8E
+      - generic [ref=e311]: CRC·OK
+      - generic [ref=e313]: RX·088ms
+    - generic [ref=e314]:
+      - generic [ref=e316]: NEOS …
+      - generic [ref=e317]: ALERTS 3
+      - generic [ref=e331]: PWR·118%

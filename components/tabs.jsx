@@ -304,10 +304,38 @@ const TabSolar = () => {
 };
 
 const TabDeep = () => {
-  const { exoplanets } = useData();
+  const { exoplanets, deepsky } = useData();
   const drawer = useDrawer();
+  const [heroHover, setHeroHover] = React.useState(false);
   return (
-    <div style={{ width:'100%', height:'100%', display:'grid', gridTemplateColumns:'1.2fr 1fr', gap: 12, padding: 12, boxSizing:'border-box' }}>
+    <div style={{ width:'100%', height:'100%', display:'grid', gridTemplateRows:'minmax(0, 38%) 1fr', gap: 12, padding: 12, boxSizing:'border-box' }}>
+      {/* Hero strip — same curated entry as Overview */}
+      {deepsky && (
+        <div onClick={() => drawer.open(<DeepSkyDetail entry={deepsky} />)}
+             onMouseEnter={() => setHeroHover(true)}
+             onMouseLeave={() => setHeroHover(false)}
+             className="hud-clickable"
+             style={{ position:'relative', border:'1px solid var(--hud-hairline)', overflow:'hidden', background:'#000', cursor:'pointer' }}>
+          <DeepSkyImage entry={deepsky} />
+          <div style={{ position:'absolute', inset:0, background:'linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.6) 100%)' }} />
+          <div style={{ position:'absolute', top: 16, left: 20, right: 20, display:'flex', justifyContent:'space-between' }}>
+            <HudLabel size={9} tone="hot">{deepsky.telescope} · {deepsky.instrument}</HudLabel>
+            <HudMono size={9} tone="steel">RA {deepsky.ra}  ·  DEC {deepsky.dec}</HudMono>
+          </div>
+          <div style={{ position:'absolute', bottom: 16, left: 20, maxWidth: '55%' }}>
+            <HudValue size={28}>{deepsky.title.toUpperCase()}</HudValue>
+            <HudMono size={10} tone="steel" style={{ display:'block', marginTop: 4 }}>
+              {deepsky.target} · {deepsky.target_type} · {deepsky.distance} · {deepsky.year}
+            </HudMono>
+            <div style={{ marginTop: 10, fontFamily:'Rajdhani, sans-serif', fontSize: 12, lineHeight: 1.5, color:'var(--hud-ink-dim)',
+                opacity: heroHover ? 1 : 0.6, transition:'opacity 0.18s' }}>
+              {deepsky.blurb}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr', gap: 12, minHeight: 0 }}>
       <div style={{ border:'1px solid var(--hud-hairline)', padding: 14, display:'flex', flexDirection:'column' }}>
         <div style={{ display:'flex', justifyContent:'space-between' }}>
           <HudLabel size={10}>EXOPLANET · ARCHIVE</HudLabel>
@@ -354,6 +382,7 @@ const TabDeep = () => {
             })}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
