@@ -246,29 +246,43 @@ const HudBars = ({ data = [], width = 120, height = 32, color = 'var(--hud-ink)'
 
 // 12) RADAR — polar plot, plot points by (angle, r) 0..1.
 // `spin` = seconds per revolution for the rings/sectors (labels stay horizontal).
-const HudRadar = ({ size = 220, points = [], rings = 4, sectors = 12, color = 'var(--hud-ink)', dim = 'var(--hud-hairline)', centerLabel, spin = 0, style = {} }) => {
+const HudRadar = ({ size = 220, points = [], rings = 4, sectors = 12, color = 'var(--hud-ink)', dim = 'var(--hud-hairline)', centerLabel, spin = 0, ringLabels = null, customRings = null, style = {} }) => {
   const cx = size / 2, cy = size / 2, R = size / 2 - 8;
+  const ringRadii = customRings || Array.from({ length: rings }, (_, i) => (R / rings) * (i + 1));
   const spinStyle = spin > 0 ? { animation: `hud-rot ${spin}s linear infinite`, transformOrigin: `${cx}px ${cy}px`, transformBox: 'fill-box' } : {};
   return (
     <svg width={size} height={size} style={style}>
       {/* Rotating layer — rings + sector spokes only */}
       <g style={spinStyle}>
-        {Array.from({ length: rings }).map((_, i) => (
-          <circle key={i} cx={cx} cy={cy} r={(R / rings) * (i + 1)} fill="none" stroke={dim} strokeWidth="1" />
+        {ringRadii.map((rr, i) => (
+          <circle key={i} cx={cx} cy={cy} r={rr} fill="none" stroke={dim} strokeWidth="1" />
         ))}
         {Array.from({ length: sectors }).map((_, i) => {
           const a = (i / sectors) * Math.PI * 2 - Math.PI / 2;
           return <line key={i} x1={cx} y1={cy} x2={cx + Math.cos(a) * R} y2={cy + Math.sin(a) * R} stroke={dim} strokeWidth="1" />;
         })}
       </g>
+      {/* Ring labels — non-rotating */}
+      {ringLabels && ringRadii.map((rr, i) => ringLabels[i] && (
+        <text key={`rl${i}`} x={cx + 2} y={cy - rr - 2} fill="var(--hud-steel)" fontSize="7" fontFamily="var(--font-mono)" letterSpacing="0.5">{ringLabels[i]}</text>
+      ))}
       {/* Non-rotating layer — points + labels stay readable */}
       {points.map((p, i) => {
         const a = (p.angle || 0) * Math.PI * 2 - Math.PI / 2;
         const r = (p.r || 0) * R;
         const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
         return <g key={i}>
-          <rect x={x - 3} y={y - 3} width={6} height={6} fill={p.hot ? 'var(--hud-accent)' : color} />
+          {(() => {
+            const s = Math.max(4, Math.min(16, p.size || 6));
+            const stroke = p.selected ? 'var(--hud-accent)' : 'transparent';
+            const fill = p.hot ? 'var(--hud-accent)' : color;
+            return <rect x={x - s/2} y={y - s/2} width={s} height={s} fill={fill} stroke={stroke} strokeWidth={p.selected ? 1.5 : 0} />;
+          })()}
           {p.label && <text x={x + 6} y={y + 3} fill="var(--hud-ink-dim)" fontSize="8" fontFamily="var(--font-mono)">{p.label}</text>}
+          {p.id !== undefined && p.onClick && (
+            <rect x={x - 10} y={y - 10} width={20} height={20} fill="transparent" style={{ cursor:'pointer' }}
+                  onClick={() => p.onClick(p.id)} />
+          )}
         </g>;
       })}
       <circle cx={cx} cy={cy} r="2" fill={color} />

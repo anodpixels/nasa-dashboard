@@ -144,12 +144,36 @@ const TabNEO = () => {
   const { neos } = useData();
   const drawer = useDrawer();
   const hazards = neos.filter(n=>n.hazard);
-  const neoPoints = neos.slice(0, 14).map((n, i) => ({
-    angle: ((i * 47) % 360) / 360,
-    r: Math.min(0.95, 0.12 + Math.log10(Math.max(1, n.miss_km))/10),
+  const [selectedId, setSelectedId] = React.useState(null);
+  const rowRefs = React.useRef({});
+  const selectPoint = (id) => {
+    setSelectedId(id);
+    const el = rowRefs.current[id];
+    if (el) el.scrollIntoView({ block:'nearest', behavior:'smooth' });
+  };
+  const today = React.useMemo(() => { const d = new Date(); d.setUTCHours(0,0,0,0); return d; }, []);
+  const dayOffset = (iso) => {
+    if (!iso) return 0;
+    const d = new Date(iso); d.setUTCHours(0,0,0,0);
+    return Math.max(0, Math.min(7, (d - today) / 86400000));
+  };
+  const RADAR_SIZE = 420;
+  const RADAR_R = RADAR_SIZE / 2 - 8;
+  const ldToRadius = (ld) => {
+    const t = Math.log10(Math.max(0.5, ld));
+    return Math.min(0.95, 0.18 + 0.57 * (t / 1.5)) * RADAR_R;
+  };
+  const ringRadiiLD = [1, 5, 30].map(ldToRadius);
+  const neoPoints = React.useMemo(() => neos.map((n) => ({
+    id: n.id,
+    angle: dayOffset(n.date) / 7,
+    r: ldToRadius(n.miss_lunar) / RADAR_R,
     label: n.name.split(' ').pop().slice(0,4),
     hot: n.hazard,
-  }));
+    size: 4 + Math.log10(Math.max(1, n.diameter_m)) * 2.4,
+    selected: n.id === selectedId,
+    onClick: selectPoint,
+  })), [neos, selectedId]);
   return (
     <div style={{ width:'100%', height:'100%', display:'grid', gridTemplateColumns:'1fr 1.2fr', gap: 12, padding: 12, boxSizing:'border-box' }}>
       <div style={{ border:'1px solid var(--hud-hairline)', padding: 12, display:'flex', flexDirection:'column' }}>
@@ -158,11 +182,32 @@ const TabNEO = () => {
           <HudChip tone="hot" solid>{hazards.length} PHA</HudChip>
         </div>
         <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <HudRadar size={420} rings={6} sectors={16} points={neoPoints} centerLabel="EARTH" spin={120} />
+          <HudRadar
+            size={RADAR_SIZE}
+            customRings={ringRadiiLD}
+            ringLabels={['1 LD', '5 LD', '30 LD']}
+            sectors={7}
+            points={neoPoints}
+            centerLabel="EARTH"
+            spin={0}
+          />
+        </div>
+        <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap: 14, marginTop: 4, marginBottom: 6, flexWrap:'wrap' }}>
+          <span style={{ display:'flex', alignItems:'center', gap: 4 }}>
+            <span style={{ width: 8, height: 8, background:'var(--hud-ink)', display:'inline-block' }} />
+            <HudMono size={8} tone="steel">NEO</HudMono>
+          </span>
+          <span style={{ display:'flex', alignItems:'center', gap: 4 }}>
+            <span style={{ width: 8, height: 8, background:'var(--hud-accent)', display:'inline-block' }} />
+            <HudMono size={8} tone="steel">PHA</HudMono>
+          </span>
+          <HudMono size={8} tone="steel">SIZE · ∝ log(DIA)</HudMono>
+          <HudMono size={8} tone="steel">RING · MISS·LD</HudMono>
+          <HudMono size={8} tone="steel">ANGLE · DAYS FROM TODAY</HudMono>
         </div>
         <div style={{ display:'flex', justifyContent:'space-between' }}>
-          <HudMono size={8} tone="steel">INNER 0.05 AU</HudMono>
-          <HudMono size={8} tone="steel">OUTER 0.5 AU · ROTATING</HudMono>
+          <HudMono size={8} tone="steel">RINGS · 1 / 5 / 30 LD</HudMono>
+          <HudMono size={8} tone="steel">SECTORS · NEXT 7 DAYS</HudMono>
         </div>
       </div>
       <div style={{ display:'flex', flexDirection:'column', gap: 10, minHeight: 0 }}>
@@ -179,9 +224,17 @@ const TabNEO = () => {
           </div>
           <div style={{ flex: 1, overflowY:'auto', minHeight: 0 }}>
             {neos.map((n, i) => (
-              <div key={n.id||i} onClick={() => drawer.open(<NEODetail neo={n} />)} className="hud-clickable" style={{ display:'grid', gridTemplateColumns:'40px 1fr 60px 70px 70px 40px', gap: 10, padding:'5px 10px',
+              <div key={n.id||i}
+                ref={(el) => { if (el) rowRefs.current[n.id] = el; }}
+                onClick={() => { setSelectedId(n.id); drawer.open(<NEODetail neo={n} />); }}
+                onMouseEnter={() => setSelectedId(n.id)}
+                className="hud-clickable"
+                style={{ display:'grid', gridTemplateColumns:'40px 1fr 60px 70px 70px 40px', gap: 10, padding:'5px 10px',
                 borderBottom:'1px solid var(--hud-hairline-soft)',
-                background: n.hazard ? 'rgba(232,122,42,0.08)' : 'transparent',
+                background: n.id === selectedId
+                  ? 'rgba(232,122,42,0.18)'
+                  : (n.hazard ? 'rgba(232,122,42,0.08)' : 'transparent'),
+                boxShadow: n.id === selectedId ? 'inset 2px 0 0 var(--hud-accent)' : 'none',
                 cursor:'pointer' }}>
                 <HudMono size={9} tone="steel">{String(i+1).padStart(2,'0')}</HudMono>
                 <HudMono size={9} tone={n.hazard?'hot':'ink'}>{n.name}</HudMono>
