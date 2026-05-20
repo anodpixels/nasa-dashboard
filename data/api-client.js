@@ -19,10 +19,14 @@ async function fetchAPOD() {
   catch { return window.NASA.apod; }
 }
 
-async function fetchNEOs() {
+async function fetchNEOs(days = 7) {
   try {
-    const today = new Date().toISOString().slice(0, 10);
-    const j = await safeFetch(`${API}/neo/rest/v1/feed?start_date=${today}&end_date=${today}&api_key=${NASA_KEY}`);
+    const span = Math.min(7, Math.max(1, days)) - 1;
+    const today = new Date();
+    const end = new Date(today.getTime() + span * 86400000);
+    const startStr = today.toISOString().slice(0, 10);
+    const endStr = end.toISOString().slice(0, 10);
+    const j = await safeFetch(`${API}/neo/rest/v1/feed?start_date=${startStr}&end_date=${endStr}&api_key=${NASA_KEY}`);
     const arr = [];
     Object.values(j.near_earth_objects || {}).forEach(day => day.forEach(n => {
       const ca = n.close_approach_data?.[0];
@@ -35,6 +39,8 @@ async function fetchNEOs() {
         miss_lunar: +(+(ca?.miss_distance?.lunar || 0)).toFixed(2),
         hazard: n.is_potentially_hazardous_asteroid,
         date: ca?.close_approach_date || today,
+        epoch: ca?.epoch_date_close_approach ? +ca.epoch_date_close_approach : null,
+        jpl_url: n.nasa_jpl_url || null,
       });
     }));
     return arr.length ? arr.slice(0, 14) : window.NASA.neos;
@@ -121,4 +127,50 @@ async function fetchMarsPhotos() {
   } catch { return window.NASA.mars_photos; }
 }
 
-window.NASA_API = { fetchAPOD, fetchNEOs, fetchDONKI, fetchEPIC, fetchMarsPhotos };
+// Per-NEO orbital data, cached for the session so repeat drawer opens cost nothing.
+const __orbCache = new Map();
+async function fetchNeoOrbitalData(id) {
+  if (!id) return null;
+  if (__orbCache.has(id)) return __orbCache.get(id);
+  try {
+    const j = await safeFetch(`${API}/neo/rest/v1/neo/${id}?api_key=${NASA_KEY}`);
+    const od = j.orbital_data || {};
+    const out = {
+      class: od.orbit_class?.orbit_class_type || null,
+      class_desc: od.orbit_class?.orbit_class_description || null,
+      ecc: od.eccentricity != null ? +(+od.eccentricity).toFixed(3) : null,
+      inc: od.inclination != null ? +(+od.inclination).toFixed(2) : null,
+      a:   od.semi_major_axis != null ? +(+od.semi_major_axis).toFixed(3) : null,
+      period_d: od.orbital_period != null ? +(+od.orbital_period).toFixed(1) : null,
+      first_obs: od.first_observation_date || null,
+      last_obs:  od.last_observation_date || null,
+      jpl_url:   j.nasa_jpl_url || null,
+    };
+    __orbCache.set(id, out);
+    return out;
+  } catch { __orbCache.set(id, null); return null; }
+}
+
+// JPL Sentry — impact-risk listed objects, indexed by designation.
+let __sentryCache = null;
+async function fetchSentryAll() {
+  if (__sentryCache) return __sentryCache;
+  try {
+    const j = await safeFetch('https://ssd-api.jpl.nasa.gov/sentry.api?all=1');
+    const out = {};
+    (j.data || []).forEach(row => {
+      const key = (row.des || '').trim();
+      if (!key) return;
+      out[key] = {
+        ip: +row.ip,
+        ps: +row.ps_cum,
+        ts: row.ts_max ? +row.ts_max : 0,
+        range: row.range || '',
+      };
+    });
+    __sentryCache = out;
+    return out;
+  } catch { __sentryCache = {}; return __sentryCache; }
+}
+
+window.NASA_API = { fetchAPOD, fetchNEOs, fetchDONKI, fetchEPIC, fetchMarsPhotos, fetchNeoOrbitalData, fetchSentryAll };

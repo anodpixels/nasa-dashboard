@@ -255,6 +255,14 @@ const GLOSSARY = {
   packet: "Packet ID — the identifier of the most recent telemetry packet received. Refreshes as new data arrives.",
   rx: "RX latency — round-trip time for the last acknowledged packet, in milliseconds. Higher = slower link.",
   crc: "Cyclic Redundancy Check — a checksum that confirms the received packet wasn't corrupted in transit.",
+  orbit_class: "Orbit class — IAU category by the object's orbit relative to Earth's. APOLLO crosses Earth's orbit, ATEN orbits mostly inside it, AMOR stays just outside, ATIRA stays entirely inside.",
+  eccentricity: "Orbital eccentricity — 0 = perfect circle, 1 = parabola. Earth is 0.017; comets are often above 0.9.",
+  inclination: "Orbital inclination — tilt of the orbit relative to the ecliptic (Earth's orbital plane), in degrees.",
+  semi_major_axis: "Semi-major axis — half the long diameter of the elliptical orbit; the object's average distance from the Sun. 1 AU = Earth–Sun distance.",
+  orbital_period: "Orbital period — Earth-days to complete one trip around the Sun. Earth = 365.25.",
+  sentry_ip: "Sentry impact probability — cumulative chance of Earth impact across all observed close approaches in the next ~100 years. 1e-4 = 1-in-10,000.",
+  palermo: "Palermo Technical Hazard Scale — log of risk-to-background. 0 = average risk for an object of that size; positive numbers are above background.",
+  torino: "Torino Scale — 0 to 10 categorical impact-hazard rating. 0 = no concern; 10 = certain impact, global consequences.",
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -311,20 +319,54 @@ const APODDetail = ({ apod }) => (
   </div>
 );
 
-const NEODetail = ({ neo }) => (
-  <div>
-    <DrawerTitle kicker={neo.hazard ? 'Potentially hazardous asteroid' : 'Near-Earth object'} title={neo.name} sub={`Close approach ${neo.date || 'today'}`} />
-    <DrawerRow label="Diameter" value={`${neo.diameter_m} m`} tone="ink" info={GLOSSARY.dia_m} />
-    <DrawerRow label="Velocity" value={`${neo.velocity_kms} km/s`} tone="cool" info={GLOSSARY.v_kms} />
-    <DrawerRow label="Miss distance" value={`${neo.miss_km.toLocaleString()} km`} tone={neo.hazard?'hot':'ink'} />
-    <DrawerRow label="In Lunar Dist." value={`${neo.miss_lunar.toFixed(2)} LD`} tone={neo.hazard?'hot':'cool'} info={GLOSSARY.miss_ld} />
-    <DrawerRow label="Classification" value={neo.hazard ? 'PHA' : 'NEO'} tone={neo.hazard?'hot':'ink'} info={GLOSSARY.pha} />
-    <DrawerNote>
-      At {neo.velocity_kms} km/s, this object is moving about {Math.round(neo.velocity_kms * 3600)} km/h — roughly {(neo.velocity_kms / 0.34).toFixed(0)}× the speed of sound.
-      {neo.hazard ? ' Its size + trajectory earn PHA status; orbit is monitored but no impact risk is current.' : ' Too small or too distant to be classified as hazardous.'}
-    </DrawerNote>
-  </div>
-);
+const NEODetail = ({ neo }) => {
+  const [orb, setOrb] = React.useState(null);
+  const [sentry, setSentry] = React.useState(null);
+  React.useEffect(() => {
+    let alive = true;
+    window.NASA_API?.fetchNeoOrbitalData?.(neo.id).then(d => { if (alive) setOrb(d); });
+    window.NASA_API?.fetchSentryAll?.().then(all => { if (alive) setSentry(all?.[neo.name] || null); });
+    return () => { alive = false; };
+  }, [neo.id, neo.name]);
+  return (
+    <div>
+      <DrawerTitle kicker={neo.hazard ? 'Potentially hazardous asteroid' : 'Near-Earth object'} title={neo.name} sub={`Close approach ${neo.date || 'today'}`} />
+      <DrawerRow label="Diameter" value={`${neo.diameter_m} m`} tone="ink" info={GLOSSARY.dia_m} />
+      <DrawerRow label="Velocity" value={`${neo.velocity_kms} km/s`} tone="cool" info={GLOSSARY.v_kms} />
+      <DrawerRow label="Miss distance" value={`${neo.miss_km.toLocaleString()} km`} tone={neo.hazard?'hot':'ink'} />
+      <DrawerRow label="In Lunar Dist." value={`${neo.miss_lunar.toFixed(2)} LD`} tone={neo.hazard?'hot':'cool'} info={GLOSSARY.miss_ld} />
+      <DrawerRow label="Classification" value={neo.hazard ? 'PHA' : 'NEO'} tone={neo.hazard?'hot':'ink'} info={GLOSSARY.pha} />
+      {orb && (
+        <>
+          {orb.class && <DrawerRow label="Orbit class" value={orb.class} tone="ink" info={GLOSSARY.orbit_class} />}
+          {orb.ecc != null && <DrawerRow label="Eccentricity" value={orb.ecc} info={GLOSSARY.eccentricity} />}
+          {orb.inc != null && <DrawerRow label="Inclination" value={`${orb.inc}°`} info={GLOSSARY.inclination} />}
+          {orb.a != null && <DrawerRow label="Semi-major axis" value={`${orb.a} AU`} info={GLOSSARY.semi_major_axis} />}
+          {orb.period_d != null && <DrawerRow label="Orbital period" value={`${orb.period_d} d`} info={GLOSSARY.orbital_period} />}
+          {orb.first_obs && <DrawerRow label="First observed" value={orb.first_obs} />}
+          {orb.last_obs && <DrawerRow label="Last observed" value={orb.last_obs} />}
+        </>
+      )}
+      {sentry && (
+        <>
+          <DrawerRow label="Sentry IP" value={sentry.ip.toExponential(2)} tone="hot" info={GLOSSARY.sentry_ip} />
+          <DrawerRow label="Palermo scale" value={sentry.ps.toFixed(2)} tone="hot" info={GLOSSARY.palermo} />
+          <DrawerRow label="Torino scale" value={sentry.ts} tone={sentry.ts > 0 ? 'hot' : 'ink'} info={GLOSSARY.torino} />
+          {sentry.range && <DrawerRow label="Risk window" value={sentry.range} />}
+        </>
+      )}
+      <DrawerNote>
+        At {neo.velocity_kms} km/s, this object is moving about {Math.round(neo.velocity_kms * 3600)} km/h — roughly {(neo.velocity_kms / 0.34).toFixed(0)}× the speed of sound.
+        {neo.hazard ? ' Its size + trajectory earn PHA status; orbit is monitored but no impact risk is current.' : ' Too small or too distant to be classified as hazardous.'}
+      </DrawerNote>
+      {(orb?.jpl_url || neo.jpl_url) && (
+        <a href={orb?.jpl_url || neo.jpl_url} target="_blank" rel="noopener" style={{ textDecoration:'none' }}>
+          <div style={{ fontFamily:'var(--font-display)', fontSize: 10, letterSpacing:'0.22em', color:'var(--hud-accent)', marginTop: 14, textTransform:'uppercase', cursor:'pointer' }}>▸ JPL Small-Body Database</div>
+        </a>
+      )}
+    </div>
+  );
+};
 
 const CrewDetail = ({ crew }) => (
   <div>

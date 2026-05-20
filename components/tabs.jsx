@@ -141,7 +141,7 @@ const TabEarth = () => {
 };
 
 const TabNEO = () => {
-  const { neos } = useData();
+  const { neos, sentry, neoDays, setNeoDays } = useData();
   const drawer = useDrawer();
   const hazards = neos.filter(n=>n.hazard);
   const [selectedId, setSelectedId] = React.useState(null);
@@ -153,46 +153,77 @@ const TabNEO = () => {
     if (el) el.scrollIntoView({ block:'nearest', behavior:'smooth' });
   };
   const today = React.useMemo(() => { const d = new Date(); d.setUTCHours(0,0,0,0); return d; }, []);
-  // Build a date window that adapts to the data: anchored at min(today, earliest)
-  // and spans at least 7 days, but extends to cover the latest if data reaches further.
-  // Keeps the polar plot meaningful when data is partially or entirely past.
-  const dateWindow = React.useMemo(() => {
-    const ts = neos.map(n => n.date && new Date(n.date).setUTCHours(0,0,0,0)).filter(Boolean);
-    const todayMs = today.getTime();
-    if (!ts.length) return { min: todayMs, max: todayMs + 7 * 86400000 };
-    const min = Math.min(todayMs, ...ts);
-    const max = Math.max(min + 7 * 86400000, ...ts, todayMs);
+  // Time-of-approach in ms. Prefer the full epoch when present; otherwise fall back
+  // to the date string at UTC midnight. Same-day items without an epoch are spread
+  // by index within the day so they don't fully overlap on the polar plot.
+  const neoTime = React.useMemo(() => {
+    const byDay = new Map();
+    return neos.map((n) => {
+      if (n.epoch) return n.epoch;
+      if (!n.date) return null;
+      const day = new Date(n.date); day.setUTCHours(0,0,0,0);
+      const k = day.getTime();
+      const idx = byDay.get(k) || 0;
+      byDay.set(k, idx + 1);
+      const sameDayCount = neos.filter(x => x.date === n.date && !x.epoch).length;
+      // Spread inside the 24h window so points fan out instead of stacking.
+      return k + ((idx + 0.5) / Math.max(1, sameDayCount)) * 86400000;
+    });
+  }, [neos]);
+  // Build a time window that adapts to the data and is anchored at "now" so the
+  // 12 o'clock spoke represents the present moment.
+  const timeWindow = React.useMemo(() => {
+    const nowMs = Date.now();
+    const ts = neoTime.filter(Boolean);
+    if (!ts.length) return { min: nowMs - 86400000, max: nowMs + 7 * 86400000 };
+    const earliest = Math.min(...ts);
+    const latest = Math.max(...ts);
+    const min = Math.min(nowMs - 86400000, earliest);
+    const max = Math.max(min + 7 * 86400000, latest, nowMs + 86400000);
     return { min, max };
-  }, [neos, today]);
-  const dayOffset = (iso) => {
-    if (!iso) return 0;
-    const d = new Date(iso); d.setUTCHours(0,0,0,0);
-    const span = dateWindow.max - dateWindow.min || 86400000;
-    return Math.max(0, Math.min(1, (d.getTime() - dateWindow.min) / span));
-  };
+  }, [neoTime]);
   const RADAR_SIZE = 420;
   const RADAR_R = RADAR_SIZE / 2 - 8;
+  // Choose ring stops that bracket the actual miss-distance range, on a log scale,
+  // so the outer ring stays meaningful even when all approaches are far out.
+  const ringStopsLD = React.useMemo(() => {
+    const maxLD = Math.max(1, ...neos.map(n => n.miss_lunar || 0));
+    const candidates = [1, 5, 30, 100, 300, 1000];
+    const outer = candidates.find(c => c >= maxLD * 1.05) || Math.ceil(maxLD * 1.1);
+    if (outer <= 30)  return [1, 5, 30];
+    if (outer <= 100) return [1, 10, 100];
+    if (outer <= 300) return [5, 50, 300];
+    return [10, 100, outer];
+  }, [neos]);
   const ldToRadius = (ld) => {
-    const t = Math.log10(Math.max(0.5, ld));
-    return Math.min(0.95, 0.18 + 0.57 * (t / 1.5)) * RADAR_R;
+    const minStop = ringStopsLD[0];
+    const maxStop = ringStopsLD[ringStopsLD.length - 1];
+    const lo = Math.log10(minStop), hi = Math.log10(maxStop);
+    const t = (Math.log10(Math.max(minStop * 0.5, ld)) - lo) / (hi - lo);
+    return (0.18 + 0.77 * Math.max(0, Math.min(1, t))) * RADAR_R;
   };
-  const ringRadiiLD = [1, 5, 30].map(ldToRadius);
-  const neoPoints = React.useMemo(() => neos.map((n) => ({
-    id: n.id,
-    angle: dayOffset(n.date),
-    r: ldToRadius(n.miss_lunar) / RADAR_R,
-    label: n.name.split(' ').pop().slice(0,4),
-    hot: n.hazard,
-    size: 4 + Math.log10(Math.max(1, n.diameter_m)) * 2.4,
-    selected: n.id === selectedId,
-    onClick: selectPoint,
-  })), [neos, selectedId]);
+  const ringRadiiLD = ringStopsLD.map(ldToRadius);
+  const neoPoints = React.useMemo(() => neos.map((n, i) => {
+    const t = neoTime[i];
+    const span = timeWindow.max - timeWindow.min || 86400000;
+    const angle = t == null ? 0 : Math.max(0, Math.min(1, (t - timeWindow.min) / span));
+    return {
+      id: n.id,
+      angle,
+      r: ldToRadius(n.miss_lunar) / RADAR_R,
+      label: n.name.split(' ').pop().slice(0,4),
+      hot: n.hazard,
+      size: 4 + Math.log10(Math.max(1, n.diameter_m)) * 2.4,
+      selected: n.id === selectedId,
+      onClick: selectPoint,
+    };
+  }), [neos, neoTime, timeWindow, ringStopsLD, selectedId]);
   const [now, setNow] = React.useState(() => Date.now());
   React.useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
   const nextApproach = React.useMemo(() => {
     const upcoming = neos
-      .filter(n => n.date)
-      .map(n => ({ n, ts: new Date(n.date).getTime() }))
+      .filter(n => n.date || n.epoch)
+      .map(n => ({ n, ts: n.epoch || new Date(n.date).getTime() }))
       .filter(x => x.ts >= now - 86400000)
       .sort((a, b) => a.ts - b.ts);
     return upcoming[0] || null;
@@ -243,16 +274,26 @@ const TabNEO = () => {
   return (
     <div style={{ width:'100%', height:'100%', display:'grid', gridTemplateColumns:'1fr 1.2fr', gap: 12, padding: 12, boxSizing:'border-box' }}>
       <div style={{ border:'1px solid var(--hud-hairline)', padding: 12, display:'flex', flexDirection:'column' }}>
-        <div style={{ display:'flex', justifyContent:'space-between' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <HudLabel size={10}>NEO · POLAR PLOT</HudLabel>
-          <HudChip tone="hot" solid>{hazards.length} PHA</HudChip>
+          <div style={{ display:'flex', alignItems:'center', gap: 6 }}>
+            {[1, 3, 7].map(d => {
+              const active = neoDays === d;
+              return (
+                <span key={d} onClick={() => setNeoDays?.(d)} style={{ cursor:'pointer' }}>
+                  <HudChip tone={active ? 'hot' : 'steel'} solid={active}>{d}D</HudChip>
+                </span>
+              );
+            })}
+            <HudChip tone="hot" solid>{hazards.length} PHA</HudChip>
+          </div>
         </div>
         <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
           <HudRadar
             size={RADAR_SIZE}
             customRings={ringRadiiLD}
-            ringLabels={['1 LD', '5 LD', '30 LD']}
-            sectors={Math.max(7, Math.min(14, Math.round((dateWindow.max - dateWindow.min) / 86400000)))}
+            ringLabels={ringStopsLD.map(v => `${v} LD`)}
+            sectors={Math.max(7, Math.min(14, Math.round((timeWindow.max - timeWindow.min) / 86400000)))}
             points={neoPoints}
             centerLabel="EARTH"
             spin={0}
@@ -272,8 +313,8 @@ const TabNEO = () => {
           <HudMono size={8} tone="steel">ANGLE · APPROACH DATE</HudMono>
         </div>
         <div style={{ display:'flex', justifyContent:'space-between' }}>
-          <HudMono size={8} tone="steel">RINGS · 1 / 5 / 30 LD</HudMono>
-          <HudMono size={8} tone="steel">WINDOW · {Math.round((dateWindow.max - dateWindow.min) / 86400000)} DAYS</HudMono>
+          <HudMono size={8} tone="steel">RINGS · {ringStopsLD.join(' / ')} LD</HudMono>
+          <HudMono size={8} tone="steel">WINDOW · {Math.round((timeWindow.max - timeWindow.min) / 86400000)} DAYS</HudMono>
         </div>
       </div>
       <div style={{ display:'flex', flexDirection:'column', gap: 10, minHeight: 0 }}>
@@ -329,7 +370,12 @@ const TabNEO = () => {
                 boxShadow: n.id === selectedId ? 'inset 2px 0 0 var(--hud-accent)' : 'none',
                 cursor:'pointer' }}>
                 <HudMono size={9} tone="steel">{String(i+1).padStart(2,'0')}</HudMono>
-                <HudMono size={9} tone={n.hazard?'hot':'ink'}>{n.name}</HudMono>
+                <span style={{ display:'inline-flex', alignItems:'center', gap: 5, minWidth: 0 }}>
+                  <HudMono size={9} tone={n.hazard?'hot':'ink'}>{n.name}</HudMono>
+                  {sentry?.[n.name] && (
+                    <span title="Sentry impact-risk listed" style={{ fontFamily:'var(--font-display)', fontSize: 8, fontWeight: 600, letterSpacing:'0.1em', color:'var(--hud-bg, #0a0a0a)', background:'var(--hud-accent)', padding:'1px 4px', borderRadius: 1 }}>R</span>
+                  )}
+                </span>
                 <HudMono size={9} tone={n.date && new Date(n.date).setUTCHours(0,0,0,0) === today.getTime() ? 'hot' : 'ink-dim'}>{n.date?.slice(5) || '—'}</HudMono>
                 <HudMono size={9} tone="ink-dim">{n.diameter_m}</HudMono>
                 <HudMono size={9} tone="cool">{n.velocity_kms}</HudMono>

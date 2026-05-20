@@ -49,18 +49,18 @@ window.NASA = {
 
   // NeoWs — near-Earth objects close approaches (next 7 days)
   neos: [
-    { id: '2523656', name: '2023 FY14',  diameter_m: 142, velocity_kms: 18.32, miss_km: 4_281_992, miss_lunar: 11.14, hazard: false, date: '2026-04-18' },
-    { id: '2001036', name: '1036 Ganymed', diameter_m: 37800, velocity_kms: 14.01, miss_km: 56_129_882, miss_lunar: 145.98, hazard: false, date: '2026-04-18' },
-    { id: '3542519', name: '2010 PR10', diameter_m: 89,  velocity_kms: 9.17, miss_km: 1_892_441, miss_lunar: 4.92, hazard: false, date: '2026-04-19' },
-    { id: '3799273', name: '2018 RC',   diameter_m: 24,  velocity_kms: 12.88, miss_km: 882_120,  miss_lunar: 2.29, hazard: false, date: '2026-04-19' },
-    { id: '2011031', name: '2011 UL21', diameter_m: 2310, velocity_kms: 26.52, miss_km: 6_712_801, miss_lunar: 17.45, hazard: true,  date: '2026-04-20' },
-    { id: '3102223', name: '2002 VX94', diameter_m: 512, velocity_kms: 21.73, miss_km: 3_118_442, miss_lunar: 8.11, hazard: false, date: '2026-04-20' },
-    { id: '3726914', name: '2015 NU13', diameter_m: 61,  velocity_kms: 7.44, miss_km: 412_003,   miss_lunar: 1.07, hazard: true,  date: '2026-04-21' },
-    { id: '3843641', name: '2019 OD',   diameter_m: 180, velocity_kms: 15.92, miss_km: 2_004_912, miss_lunar: 5.21, hazard: false, date: '2026-04-21' },
-    { id: '2388945', name: '2005 WR1',  diameter_m: 920, velocity_kms: 19.41, miss_km: 8_891_204, miss_lunar: 23.12, hazard: false, date: '2026-04-22' },
-    { id: '3455392', name: '2008 SV11', diameter_m: 47,  velocity_kms: 11.02, miss_km: 1_201_884, miss_lunar: 3.12, hazard: false, date: '2026-04-23' },
-    { id: '3991122', name: '2021 NY1',  diameter_m: 160, velocity_kms: 9.81, miss_km: 1_522_309, miss_lunar: 3.96, hazard: false, date: '2026-04-24' },
-    { id: '3726541', name: '2023 BU9',  diameter_m: 31,  velocity_kms: 6.25, miss_km: 298_441,   miss_lunar: 0.78, hazard: true,  date: '2026-04-24' },
+    { id: '2523656', name: '2023 FY14',  diameter_m: 142, velocity_kms: 18.32, miss_km: 4_281_992, miss_lunar: 11.14, hazard: false, date: '2026-04-18', epoch: Date.UTC(2026,3,18,14,32) },
+    { id: '2001036', name: '1036 Ganymed', diameter_m: 37800, velocity_kms: 14.01, miss_km: 56_129_882, miss_lunar: 145.98, hazard: false, date: '2026-04-18', epoch: Date.UTC(2026,3,18,3,11) },
+    { id: '3542519', name: '2010 PR10', diameter_m: 89,  velocity_kms: 9.17, miss_km: 1_892_441, miss_lunar: 4.92, hazard: false, date: '2026-04-19', epoch: Date.UTC(2026,3,19,9,45) },
+    { id: '3799273', name: '2018 RC',   diameter_m: 24,  velocity_kms: 12.88, miss_km: 882_120,  miss_lunar: 2.29, hazard: false, date: '2026-04-19', epoch: Date.UTC(2026,3,19,21,8) },
+    { id: '2011031', name: '2011 UL21', diameter_m: 2310, velocity_kms: 26.52, miss_km: 6_712_801, miss_lunar: 17.45, hazard: true,  date: '2026-04-20', epoch: Date.UTC(2026,3,20,6,22) },
+    { id: '3102223', name: '2002 VX94', diameter_m: 512, velocity_kms: 21.73, miss_km: 3_118_442, miss_lunar: 8.11, hazard: false, date: '2026-04-20', epoch: Date.UTC(2026,3,20,19,54) },
+    { id: '3726914', name: '2015 NU13', diameter_m: 61,  velocity_kms: 7.44, miss_km: 412_003,   miss_lunar: 1.07, hazard: true,  date: '2026-04-21', epoch: Date.UTC(2026,3,21,11,37) },
+    { id: '3843641', name: '2019 OD',   diameter_m: 180, velocity_kms: 15.92, miss_km: 2_004_912, miss_lunar: 5.21, hazard: false, date: '2026-04-21', epoch: Date.UTC(2026,3,21,23,2) },
+    { id: '2388945', name: '2005 WR1',  diameter_m: 920, velocity_kms: 19.41, miss_km: 8_891_204, miss_lunar: 23.12, hazard: false, date: '2026-04-22', epoch: Date.UTC(2026,3,22,4,18) },
+    { id: '3455392', name: '2008 SV11', diameter_m: 47,  velocity_kms: 11.02, miss_km: 1_201_884, miss_lunar: 3.12, hazard: false, date: '2026-04-23', epoch: Date.UTC(2026,3,23,17,46) },
+    { id: '3991122', name: '2021 NY1',  diameter_m: 160, velocity_kms: 9.81, miss_km: 1_522_309, miss_lunar: 3.96, hazard: false, date: '2026-04-24', epoch: Date.UTC(2026,3,24,2,55) },
+    { id: '3726541', name: '2023 BU9',  diameter_m: 31,  velocity_kms: 6.25, miss_km: 298_441,   miss_lunar: 0.78, hazard: true,  date: '2026-04-24', epoch: Date.UTC(2026,3,24,15,13) },
   ],
 
   // DONKI — space weather notifications

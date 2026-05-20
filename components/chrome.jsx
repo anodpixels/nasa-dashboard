@@ -13,15 +13,22 @@ function DataProvider({ children }) {
   const [donki, setDonki] = React.useState(window.NASA.donki);
   const [epic, setEpic] = React.useState({ meta: window.NASA.epic, url: null });
   const [marsPhotos, setMarsPhotos] = React.useState(null);
+  const [sentry, setSentry] = React.useState({});
+  const [neoDays, setNeoDays] = React.useState(7);
   const [loading, setLoading] = React.useState({ apod: true, neos: true, donki: true, epic: true, marsPhotos: true });
 
   React.useEffect(() => {
     window.NASA_API.fetchAPOD().then(d => { setApod(d); setLoading(l => ({...l, apod:false})); });
-    window.NASA_API.fetchNEOs().then(d => { setNeos(d); setLoading(l => ({...l, neos:false})); });
     window.NASA_API.fetchDONKI().then(d => { setDonki(d); setLoading(l => ({...l, donki:false})); });
     window.NASA_API.fetchEPIC().then(d => { setEpic(d); setLoading(l => ({...l, epic:false})); });
     window.NASA_API.fetchMarsPhotos().then(d => { setMarsPhotos(d); setLoading(l => ({...l, marsPhotos:false})); });
+    window.NASA_API.fetchSentryAll?.().then(d => setSentry(d || {}));
   }, []);
+
+  React.useEffect(() => {
+    setLoading(l => ({...l, neos:true}));
+    window.NASA_API.fetchNEOs(neoDays).then(d => { setNeos(d); setLoading(l => ({...l, neos:false})); });
+  }, [neoDays]);
 
   // Pick one curated deep-sky image for the session — stable across tab switches
   const [deepsky] = React.useState(() => {
@@ -29,7 +36,7 @@ function DataProvider({ children }) {
     return list[Math.floor(Math.random() * list.length)] || null;
   });
 
-  const value = { apod, neos, donki, epic, marsPhotos, loading, iss: window.NASA.iss, mars: window.NASA.mars, exoplanets: window.NASA.exoplanets, fireballs: window.NASA.fireballs, deepsky };
+  const value = { apod, neos, donki, epic, marsPhotos, sentry, neoDays, setNeoDays, loading, iss: window.NASA.iss, mars: window.NASA.mars, exoplanets: window.NASA.exoplanets, fireballs: window.NASA.fireballs, deepsky };
   return <DataCtx.Provider value={value}>{children}</DataCtx.Provider>;
 }
 
