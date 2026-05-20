@@ -23,8 +23,9 @@ const HudCorner = ({ size = 8, color = 'var(--hud-ink)', inset = 0, children, st
 );
 
 // 2) LABEL / VALUE — wide-tracked uppercase label + condensed numeric value
-const HudLabel = ({ children, tone = 'steel', size = 10, track = 0.24, style = {} }) => (
+const HudLabel = ({ children, tone = 'steel', size = 10, track = 0.24, className, style = {} }) => (
   <span
+    className={className}
     style={{
       fontFamily: 'var(--font-display)',
       fontSize: size,

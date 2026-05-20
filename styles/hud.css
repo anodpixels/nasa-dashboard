@@ -280,3 +280,7 @@
   background-color: rgba(232, 122, 42, 0.12) !important;
   box-shadow: inset 0 0 0 1px var(--hud-accent);
 }
+
+/* sortable header affordance */
+.hud-sort-h { border-bottom: 1px dotted var(--hud-steel-dim); padding-bottom: 1px; transition: border-color 0.15s ease; }
+.hud-sort-h:hover { border-color: var(--hud-accent); }

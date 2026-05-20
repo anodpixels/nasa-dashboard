@@ -145,6 +145,7 @@ const TabNEO = () => {
   const drawer = useDrawer();
   const hazards = neos.filter(n=>n.hazard);
   const [selectedId, setSelectedId] = React.useState(null);
+  const [sortBy, setSortBy] = React.useState({ key: 'date', dir: 1 });
   const rowRefs = React.useRef({});
   const selectPoint = (id) => {
     setSelectedId(id);
@@ -174,6 +175,40 @@ const TabNEO = () => {
     selected: n.id === selectedId,
     onClick: selectPoint,
   })), [neos, selectedId]);
+  const [now, setNow] = React.useState(() => Date.now());
+  React.useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+  const nextApproach = React.useMemo(() => {
+    const upcoming = neos
+      .filter(n => n.date)
+      .map(n => ({ n, ts: new Date(n.date).getTime() }))
+      .filter(x => x.ts >= now - 86400000)
+      .sort((a, b) => a.ts - b.ts);
+    return upcoming[0] || null;
+  }, [neos, now]);
+  const fmtCountdown = (ms) => {
+    if (ms <= 0) return 'NOW';
+    const s = Math.floor(ms / 1000);
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return `${d}D ${String(h).padStart(2,'0')}H ${String(m).padStart(2,'0')}M`;
+  };
+  const sortedNeos = React.useMemo(() => {
+    const get = {
+      date: (n) => new Date(n.date || 0).getTime(),
+      name: (n) => n.name,
+      dia:  (n) => n.diameter_m,
+      vel:  (n) => n.velocity_kms,
+      miss: (n) => n.miss_lunar,
+      pha:  (n) => n.hazard ? 1 : 0,
+    }[sortBy.key] || ((n) => 0);
+    return [...neos].sort((a, b) => {
+      const va = get(a), vb = get(b);
+      if (va < vb) return -1 * sortBy.dir;
+      if (va > vb) return  1 * sortBy.dir;
+      return 0;
+    });
+  }, [neos, sortBy]);
   return (
     <div style={{ width:'100%', height:'100%', display:'grid', gridTemplateColumns:'1fr 1.2fr', gap: 12, padding: 12, boxSizing:'border-box' }}>
       <div style={{ border:'1px solid var(--hud-hairline)', padding: 12, display:'flex', flexDirection:'column' }}>
@@ -212,24 +247,50 @@ const TabNEO = () => {
       </div>
       <div style={{ display:'flex', flexDirection:'column', gap: 10, minHeight: 0 }}>
         <div style={{ border:'1px solid var(--hud-hairline)', flex: 1, display:'flex', flexDirection:'column', minHeight: 0 }}>
-          <div style={{ background:'#1a1a1a', padding:'4px 10px', display:'grid', gridTemplateColumns:'40px 1fr 60px 70px 70px 40px', gap: 10, flexShrink: 0 }}>
+          {nextApproach && (
+            <div onClick={() => { setSelectedId(nextApproach.n.id); drawer.open(<NEODetail neo={nextApproach.n} />); }}
+                 className="hud-clickable"
+                 style={{ display:'grid', gridTemplateColumns:'90px 1fr auto', gap: 10, padding:'8px 10px', alignItems:'center',
+                          borderBottom:'1px solid var(--hud-accent)',
+                          background:'rgba(232,122,42,0.10)', cursor:'pointer', flexShrink: 0 }}>
+              <HudLabel size={8} tone="hot">NEXT APPROACH</HudLabel>
+              <HudMono size={11} tone="ink">{nextApproach.n.name}{nextApproach.n.hazard ? ' · PHA' : ''}</HudMono>
+              <HudValue size={14} tone="hot" style={{ fontVariantNumeric:'tabular-nums' }}>{fmtCountdown(nextApproach.ts - now)}</HudValue>
+            </div>
+          )}
+          <div style={{ background:'#1a1a1a', padding:'4px 10px', display:'grid', gridTemplateColumns:'32px 1fr 78px 56px 60px 70px 32px', gap: 10, flexShrink: 0 }}>
             {[
-              ['#', null],
-              ['DESIGNATION', null],
-              ['DIA·M', GLOSSARY.dia_m],
-              ['V·KM/S', GLOSSARY.v_kms],
-              ['MISS·LD', GLOSSARY.miss_ld],
-              ['PHA', GLOSSARY.pha],
-            ].map(([h, info]) => info ? <Tip key={h} info={info}><HudLabel size={8}>{h}</HudLabel></Tip> : <HudLabel key={h} size={8}>{h}</HudLabel>)}
+              ['#', null, null],
+              ['DESIGNATION', null, 'name'],
+              ['DATE', null, 'date'],
+              ['DIA·M', GLOSSARY.dia_m, 'dia'],
+              ['V·KM/S', GLOSSARY.v_kms, 'vel'],
+              ['MISS·LD', GLOSSARY.miss_ld, 'miss'],
+              ['PHA', GLOSSARY.pha, 'pha'],
+            ].map(([h, info, key]) => {
+              const active = key && sortBy.key === key;
+              const arrow = active ? (sortBy.dir === 1 ? ' ▲' : ' ▼') : '';
+              const onClick = key ? () => setSortBy(s => s.key === key ? { key, dir: -s.dir } : { key, dir: 1 }) : undefined;
+              const label = (
+                <HudLabel size={8} tone={active ? 'hot' : 'steel'}
+                          className={key ? 'hud-sort-h' : undefined}
+                          style={{ cursor: key ? 'pointer' : 'default' }}>
+                  {h}{arrow}
+                </HudLabel>
+              );
+              return info
+                ? <Tip key={h} info={info}><span onClick={onClick}>{label}</span></Tip>
+                : <span key={h} onClick={onClick}>{label}</span>;
+            })}
           </div>
           <div style={{ flex: 1, overflowY:'auto', minHeight: 0 }}>
-            {neos.map((n, i) => (
+            {sortedNeos.map((n, i) => (
               <div key={n.id||i}
                 ref={(el) => { if (el) rowRefs.current[n.id] = el; }}
                 onClick={() => { setSelectedId(n.id); drawer.open(<NEODetail neo={n} />); }}
                 onMouseEnter={() => setSelectedId(n.id)}
                 className="hud-clickable"
-                style={{ display:'grid', gridTemplateColumns:'40px 1fr 60px 70px 70px 40px', gap: 10, padding:'5px 10px',
+                style={{ display:'grid', gridTemplateColumns:'32px 1fr 78px 56px 60px 70px 32px', gap: 10, padding:'5px 10px',
                 borderBottom:'1px solid var(--hud-hairline-soft)',
                 background: n.id === selectedId
                   ? 'rgba(232,122,42,0.18)'
@@ -238,6 +299,7 @@ const TabNEO = () => {
                 cursor:'pointer' }}>
                 <HudMono size={9} tone="steel">{String(i+1).padStart(2,'0')}</HudMono>
                 <HudMono size={9} tone={n.hazard?'hot':'ink'}>{n.name}</HudMono>
+                <HudMono size={9} tone={dayOffset(n.date) === 0 ? 'hot' : 'ink-dim'}>{n.date?.slice(5) || '—'}</HudMono>
                 <HudMono size={9} tone="ink-dim">{n.diameter_m}</HudMono>
                 <HudMono size={9} tone="cool">{n.velocity_kms}</HudMono>
                 <HudMono size={9} tone={n.hazard?'hot':'ink-dim'}>{n.miss_lunar.toFixed(2)}</HudMono>
