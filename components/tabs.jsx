@@ -153,10 +153,22 @@ const TabNEO = () => {
     if (el) el.scrollIntoView({ block:'nearest', behavior:'smooth' });
   };
   const today = React.useMemo(() => { const d = new Date(); d.setUTCHours(0,0,0,0); return d; }, []);
+  // Build a date window that adapts to the data: anchored at min(today, earliest)
+  // and spans at least 7 days, but extends to cover the latest if data reaches further.
+  // Keeps the polar plot meaningful when data is partially or entirely past.
+  const dateWindow = React.useMemo(() => {
+    const ts = neos.map(n => n.date && new Date(n.date).setUTCHours(0,0,0,0)).filter(Boolean);
+    const todayMs = today.getTime();
+    if (!ts.length) return { min: todayMs, max: todayMs + 7 * 86400000 };
+    const min = Math.min(todayMs, ...ts);
+    const max = Math.max(min + 7 * 86400000, ...ts, todayMs);
+    return { min, max };
+  }, [neos, today]);
   const dayOffset = (iso) => {
     if (!iso) return 0;
     const d = new Date(iso); d.setUTCHours(0,0,0,0);
-    return Math.max(0, Math.min(7, (d - today) / 86400000));
+    const span = dateWindow.max - dateWindow.min || 86400000;
+    return Math.max(0, Math.min(1, (d.getTime() - dateWindow.min) / span));
   };
   const RADAR_SIZE = 420;
   const RADAR_R = RADAR_SIZE / 2 - 8;
@@ -167,7 +179,7 @@ const TabNEO = () => {
   const ringRadiiLD = [1, 5, 30].map(ldToRadius);
   const neoPoints = React.useMemo(() => neos.map((n) => ({
     id: n.id,
-    angle: dayOffset(n.date) / 7,
+    angle: dayOffset(n.date),
     r: ldToRadius(n.miss_lunar) / RADAR_R,
     label: n.name.split(' ').pop().slice(0,4),
     hot: n.hazard,
@@ -186,12 +198,15 @@ const TabNEO = () => {
     return upcoming[0] || null;
   }, [neos, now]);
   const fmtCountdown = (ms) => {
-    if (ms <= 0) return 'NOW';
-    const s = Math.floor(ms / 1000);
+    const past = ms < 0;
+    const a = Math.abs(ms);
+    if (a < 60000) return past ? 'JUST NOW' : 'NOW';
+    const s = Math.floor(a / 1000);
     const d = Math.floor(s / 86400);
     const h = Math.floor((s % 86400) / 3600);
     const m = Math.floor((s % 3600) / 60);
-    return `${d}D ${String(h).padStart(2,'0')}H ${String(m).padStart(2,'0')}M`;
+    const body = `${d}D ${String(h).padStart(2,'0')}H ${String(m).padStart(2,'0')}M`;
+    return past ? `T+ ${body}` : body;
   };
   const closestPass = React.useMemo(
     () => neos.length ? neos.reduce((a, b) => a.miss_lunar < b.miss_lunar ? a : b) : null,
@@ -237,7 +252,7 @@ const TabNEO = () => {
             size={RADAR_SIZE}
             customRings={ringRadiiLD}
             ringLabels={['1 LD', '5 LD', '30 LD']}
-            sectors={7}
+            sectors={Math.max(7, Math.min(14, Math.round((dateWindow.max - dateWindow.min) / 86400000)))}
             points={neoPoints}
             centerLabel="EARTH"
             spin={0}
@@ -254,11 +269,11 @@ const TabNEO = () => {
           </span>
           <HudMono size={8} tone="steel">SIZE · ∝ log(DIA)</HudMono>
           <HudMono size={8} tone="steel">RING · MISS·LD</HudMono>
-          <HudMono size={8} tone="steel">ANGLE · DAYS FROM TODAY</HudMono>
+          <HudMono size={8} tone="steel">ANGLE · APPROACH DATE</HudMono>
         </div>
         <div style={{ display:'flex', justifyContent:'space-between' }}>
           <HudMono size={8} tone="steel">RINGS · 1 / 5 / 30 LD</HudMono>
-          <HudMono size={8} tone="steel">SECTORS · NEXT 7 DAYS</HudMono>
+          <HudMono size={8} tone="steel">WINDOW · {Math.round((dateWindow.max - dateWindow.min) / 86400000)} DAYS</HudMono>
         </div>
       </div>
       <div style={{ display:'flex', flexDirection:'column', gap: 10, minHeight: 0 }}>
@@ -315,7 +330,7 @@ const TabNEO = () => {
                 cursor:'pointer' }}>
                 <HudMono size={9} tone="steel">{String(i+1).padStart(2,'0')}</HudMono>
                 <HudMono size={9} tone={n.hazard?'hot':'ink'}>{n.name}</HudMono>
-                <HudMono size={9} tone={dayOffset(n.date) === 0 ? 'hot' : 'ink-dim'}>{n.date?.slice(5) || '—'}</HudMono>
+                <HudMono size={9} tone={n.date && new Date(n.date).setUTCHours(0,0,0,0) === today.getTime() ? 'hot' : 'ink-dim'}>{n.date?.slice(5) || '—'}</HudMono>
                 <HudMono size={9} tone="ink-dim">{n.diameter_m}</HudMono>
                 <HudMono size={9} tone="cool">{n.velocity_kms}</HudMono>
                 <HudMono size={9} tone={n.hazard?'hot':'ink-dim'}>{n.miss_lunar.toFixed(2)}</HudMono>
