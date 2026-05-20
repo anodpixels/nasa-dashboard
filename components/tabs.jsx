@@ -193,6 +193,22 @@ const TabNEO = () => {
     const m = Math.floor((s % 3600) / 60);
     return `${d}D ${String(h).padStart(2,'0')}H ${String(m).padStart(2,'0')}M`;
   };
+  const closestPass = React.useMemo(
+    () => neos.length ? neos.reduce((a, b) => a.miss_lunar < b.miss_lunar ? a : b) : null,
+    [neos]
+  );
+  const largestObject = React.useMemo(
+    () => neos.length ? neos.reduce((a, b) => a.diameter_m > b.diameter_m ? a : b) : null,
+    [neos]
+  );
+  const compareSize = (m) => {
+    if (m >= 8000) return '≈ Mt Everest';
+    if (m >= 800)  return '≈ Burj Khalifa';
+    if (m >= 300)  return '≈ Empire State';
+    if (m >= 90)   return '≈ Statue of Liberty';
+    if (m >= 20)   return '≈ Boeing 737';
+    return '≈ House';
+  };
   const sortedNeos = React.useMemo(() => {
     const get = {
       date: (n) => new Date(n.date || 0).getTime(),
@@ -309,16 +325,27 @@ const TabNEO = () => {
           </div>
         </div>
         <div style={{ border:'1px solid var(--hud-hairline)', padding: 14, display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap: 14, flexShrink: 0 }}>
-          {[
-            ['TOTAL', neos.length, 'cool'],
-            ['HAZARD', hazards.length, 'hot'],
-            ['CLOSEST', Math.min(...neos.map(n=>n.miss_lunar)).toFixed(2)+'LD', 'hot'],
-          ].map(([l,v,t], i) => (
-            <div key={i} className="hud-bracket-4" style={{ padding: 16, display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'flex-start' }}>
-              <HudLabel size={9}>{l}</HudLabel>
-              <HudValue size={42} tone={t}>{v}</HudValue>
-            </div>
-          ))}
+          <div className="hud-bracket-4" style={{ padding: 14, display:'flex', flexDirection:'column', gap: 4, minWidth: 0 }}>
+            <HudLabel size={9}>NEXT APPROACH</HudLabel>
+            <HudValue size={28} tone="hot" style={{ fontVariantNumeric:'tabular-nums' }}>
+              {nextApproach ? fmtCountdown(nextApproach.ts - now) : '—'}
+            </HudValue>
+            <HudMono size={9} tone="steel" style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{nextApproach?.n.name || 'NO UPCOMING'}</HudMono>
+          </div>
+          <div className="hud-bracket-4" style={{ padding: 14, display:'flex', flexDirection:'column', gap: 4, minWidth: 0 }}>
+            <HudLabel size={9}>CLOSEST PASS · 7D</HudLabel>
+            <HudValue size={28} tone={closestPass?.hazard ? 'hot' : 'cool'} style={{ fontVariantNumeric:'tabular-nums' }}>
+              {closestPass ? `${closestPass.miss_lunar.toFixed(2)} LD` : '—'}
+            </HudValue>
+            <HudMono size={9} tone="steel" style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{closestPass?.name || ''}{closestPass?.hazard ? ' · PHA' : ''}</HudMono>
+          </div>
+          <div className="hud-bracket-4" style={{ padding: 14, display:'flex', flexDirection:'column', gap: 4, minWidth: 0 }}>
+            <HudLabel size={9}>LARGEST · 7D</HudLabel>
+            <HudValue size={28} tone="ink" style={{ fontVariantNumeric:'tabular-nums' }}>
+              {largestObject ? `${largestObject.diameter_m.toLocaleString()} M` : '—'}
+            </HudValue>
+            <HudMono size={9} tone="steel" style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{largestObject ? `${largestObject.name} · ${compareSize(largestObject.diameter_m)}` : ''}</HudMono>
+          </div>
         </div>
       </div>
     </div>
