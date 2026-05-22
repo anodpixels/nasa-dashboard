@@ -273,6 +273,12 @@ const HudRadar = ({ size = 220, points = [], rings = 4, sectors = 12, color = 'v
         const r = (p.r || 0) * R;
         const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
         return <g key={i}>
+          {p.trailFrom && (() => {
+            const a0 = (p.trailFrom.angle || 0) * Math.PI * 2 - Math.PI / 2;
+            const r0 = (p.trailFrom.r || 0) * R;
+            const x0 = cx + Math.cos(a0) * r0, y0 = cy + Math.sin(a0) * r0;
+            return <line x1={x0} y1={y0} x2={x} y2={y} stroke={dim} strokeWidth="1" strokeDasharray="1 3" opacity="0.6" />;
+          })()}
           {(() => {
             const s = Math.max(4, Math.min(16, p.size || 6));
             const stroke = p.selected ? 'var(--hud-accent)' : 'transparent';
@@ -288,6 +294,50 @@ const HudRadar = ({ size = 220, points = [], rings = 4, sectors = 12, color = 'v
       })}
       <circle cx={cx} cy={cy} r="2" fill={color} />
       {centerLabel && <text x={cx} y={cy - 8} fill="var(--hud-steel)" fontSize="8" fontFamily="var(--font-display)" textAnchor="middle" letterSpacing="2">{centerLabel}</text>}
+    </svg>
+  );
+};
+
+// 12b) SCATTER — Cartesian plot for energy/miss view
+const HudScatter = ({ size = 420, points = [], xLabel, yLabel, xRange = [0, 1], yRange = [0, 1], xTicks = null, yTicks = null, style = {} }) => {
+  const pad = 32; const W = size, H = size; const innerW = W - pad*2, innerH = H - pad*2;
+  const sx = (v) => pad + ((v - xRange[0]) / (xRange[1] - xRange[0])) * innerW;
+  const sy = (v) => H - pad - ((v - yRange[0]) / (yRange[1] - yRange[0])) * innerH;
+  return (
+    <svg width={W} height={H} style={style}>
+      <line x1={pad} y1={H-pad} x2={W-pad} y2={H-pad} stroke="var(--hud-hairline)" />
+      <line x1={pad} y1={pad} x2={pad} y2={H-pad} stroke="var(--hud-hairline)" />
+      {xTicks && xTicks.map((t, i) => (
+        <g key={`xt${i}`}>
+          <line x1={sx(t.v)} y1={H-pad} x2={sx(t.v)} y2={H-pad+4} stroke="var(--hud-steel)" />
+          <text x={sx(t.v)} y={H-pad+14} fill="var(--hud-steel)" fontSize="7" fontFamily="var(--font-mono)" textAnchor="middle">{t.label}</text>
+          <line x1={sx(t.v)} y1={pad} x2={sx(t.v)} y2={H-pad} stroke="var(--hud-hairline-soft)" strokeDasharray="2 3" />
+        </g>
+      ))}
+      {yTicks && yTicks.map((t, i) => (
+        <g key={`yt${i}`}>
+          <line x1={pad-4} y1={sy(t.v)} x2={pad} y2={sy(t.v)} stroke="var(--hud-steel)" />
+          <text x={pad-6} y={sy(t.v)+3} fill="var(--hud-steel)" fontSize="7" fontFamily="var(--font-mono)" textAnchor="end">{t.label}</text>
+          <line x1={pad} y1={sy(t.v)} x2={W-pad} y2={sy(t.v)} stroke="var(--hud-hairline-soft)" strokeDasharray="2 3" />
+        </g>
+      ))}
+      {points.map((p, i) => {
+        const s = Math.max(4, Math.min(16, p.size || 6));
+        const fill = p.hot ? 'var(--hud-accent)' : 'var(--hud-ink)';
+        const stroke = p.selected ? 'var(--hud-accent)' : 'transparent';
+        return (
+          <g key={i}>
+            <rect x={sx(p.x) - s/2} y={sy(p.y) - s/2} width={s} height={s} fill={fill} stroke={stroke} strokeWidth={p.selected ? 1.5 : 0} />
+            {p.label && <text x={sx(p.x) + s/2 + 3} y={sy(p.y) + 3} fontSize="8" fontFamily="var(--font-mono)" fill="var(--hud-ink-dim)">{p.label}</text>}
+            {p.id !== undefined && p.onClick && (
+              <rect x={sx(p.x) - 10} y={sy(p.y) - 10} width={20} height={20} fill="transparent" style={{ cursor:'pointer' }}
+                    onClick={() => p.onClick(p.id)} />
+            )}
+          </g>
+        );
+      })}
+      {xLabel && <text x={W-pad} y={H-6} fontSize="8" textAnchor="end" fontFamily="var(--font-display)" fill="var(--hud-steel)" letterSpacing="2">{xLabel}</text>}
+      {yLabel && <text x={pad+2} y={pad-8} fontSize="8" fontFamily="var(--font-display)" fill="var(--hud-steel)" letterSpacing="2">{yLabel}</text>}
     </svg>
   );
 };
@@ -328,5 +378,5 @@ const HudMissionDay = () => {
 Object.assign(window, {
   HudCorner, HudLabel, HudValue, HudMono, HudTicks, HudBar, HudDataRow,
   HudHeader, HudChip, HudRing, HudReticle, HudSparkline, HudBars,
-  HudRadar, HudDivider, HudScanline, HudClock, HudMissionDay,
+  HudRadar, HudScatter, HudDivider, HudScanline, HudClock, HudMissionDay,
 });

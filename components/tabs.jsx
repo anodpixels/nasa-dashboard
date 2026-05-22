@@ -146,6 +146,7 @@ const TabNEO = () => {
   const hazards = neos.filter(n=>n.hazard);
   const [selectedId, setSelectedId] = React.useState(null);
   const [sortBy, setSortBy] = React.useState({ key: 'date', dir: 1 });
+  const [view, setView] = React.useState('polar');
   const rowRefs = React.useRef({});
   const selectPoint = (id) => {
     setSelectedId(id);
@@ -207,15 +208,21 @@ const TabNEO = () => {
     const t = neoTime[i];
     const span = timeWindow.max - timeWindow.min || 86400000;
     const angle = t == null ? 0 : Math.max(0, Math.min(1, (t - timeWindow.min) / span));
+    const r = ldToRadius(n.miss_lunar) / RADAR_R;
+    // Synthetic "yesterday" anchor — one day earlier, slightly farther out.
+    const dayFrac = 86400000 / span;
+    const trailAngle = Math.max(0, Math.min(1, angle - dayFrac));
+    const trailR = ldToRadius(n.miss_lunar * 1.4) / RADAR_R;
     return {
       id: n.id,
       angle,
-      r: ldToRadius(n.miss_lunar) / RADAR_R,
+      r,
       label: n.name.split(' ').pop().slice(0,4),
       hot: n.hazard,
       size: 4 + Math.log10(Math.max(1, n.diameter_m)) * 2.4,
       selected: n.id === selectedId,
       onClick: selectPoint,
+      trailFrom: { angle: trailAngle, r: trailR },
     };
   }), [neos, neoTime, timeWindow, ringStopsLD, selectedId]);
   const [now, setNow] = React.useState(() => Date.now());
@@ -255,6 +262,22 @@ const TabNEO = () => {
     if (m >= 20)   return '≈ Boeing 737';
     return '≈ House';
   };
+  const energyPoints = React.useMemo(() => neos.map((n) => {
+    const r = n.diameter_m / 2;
+    const mass = (4/3) * Math.PI * r*r*r * 2600;
+    const ke_j = 0.5 * mass * (n.velocity_kms * 1000) ** 2;
+    const kt = ke_j / 4.184e12;
+    return {
+      id: n.id,
+      x: Math.log10(Math.max(0.1, n.miss_lunar)),
+      y: Math.log10(Math.max(1e-3, kt)),
+      label: n.name.split(' ').pop().slice(0,4),
+      hot: n.hazard,
+      size: 4 + Math.log10(Math.max(1, n.diameter_m)) * 2.4,
+      selected: n.id === selectedId,
+      onClick: selectPoint,
+    };
+  }), [neos, selectedId]);
   const sortedNeos = React.useMemo(() => {
     const get = {
       date: (n) => new Date(n.date || 0).getTime(),
@@ -275,8 +298,17 @@ const TabNEO = () => {
     <div style={{ width:'100%', height:'100%', display:'grid', gridTemplateColumns:'1fr 1.2fr', gap: 12, padding: 12, boxSizing:'border-box' }}>
       <div style={{ border:'1px solid var(--hud-hairline)', padding: 12, display:'flex', flexDirection:'column' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <HudLabel size={10}>NEO · POLAR PLOT</HudLabel>
+          <HudLabel size={10}>NEO · {view === 'polar' ? 'POLAR PLOT' : 'ENERGY · MISS DIST'}</HudLabel>
           <div style={{ display:'flex', alignItems:'center', gap: 6 }}>
+            {['polar', 'energy'].map(v => {
+              const active = view === v;
+              return (
+                <span key={v} onClick={() => setView(v)} style={{ cursor:'pointer' }}>
+                  <HudChip tone={active ? 'hot' : 'steel'} solid={active}>{v.toUpperCase()}</HudChip>
+                </span>
+              );
+            })}
+            <span style={{ width: 1, height: 14, background:'var(--hud-hairline)', margin:'0 4px' }} />
             {[1, 3, 7].map(d => {
               const active = neoDays === d;
               return (
@@ -289,15 +321,41 @@ const TabNEO = () => {
           </div>
         </div>
         <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <HudRadar
-            size={RADAR_SIZE}
-            customRings={ringRadiiLD}
-            ringLabels={ringStopsLD.map(v => `${v} LD`)}
-            sectors={Math.max(7, Math.min(14, Math.round((timeWindow.max - timeWindow.min) / 86400000)))}
-            points={neoPoints}
-            centerLabel="EARTH"
-            spin={0}
-          />
+          {view === 'polar' ? (
+            <HudRadar
+              size={RADAR_SIZE}
+              customRings={ringRadiiLD}
+              ringLabels={ringStopsLD.map(v => `${v} LD`)}
+              sectors={Math.max(7, Math.min(14, Math.round((timeWindow.max - timeWindow.min) / 86400000)))}
+              points={neoPoints}
+              centerLabel="EARTH"
+              spin={0}
+            />
+          ) : (
+            <HudScatter
+              size={RADAR_SIZE}
+              points={energyPoints}
+              xRange={[-1, 3]}
+              yRange={[-3, 7]}
+              xLabel="log₁₀ MISS · LD"
+              yLabel="log₁₀ ENERGY · KT"
+              xTicks={[
+                { v: -1, label: '0.1' },
+                { v:  0, label: '1' },
+                { v:  1, label: '10' },
+                { v:  2, label: '100' },
+                { v:  3, label: '1k' },
+              ]}
+              yTicks={[
+                { v: -3, label: '10⁻³' },
+                { v: -1, label: '0.1' },
+                { v:  1, label: '10' },
+                { v:  3, label: '1k' },
+                { v:  5, label: '100k' },
+                { v:  7, label: '10M' },
+              ]}
+            />
+          )}
         </div>
         <div style={{ display:'flex', justifyContent:'center', alignItems:'center', gap: 14, marginTop: 4, marginBottom: 6, flexWrap:'wrap' }}>
           <span style={{ display:'flex', alignItems:'center', gap: 4 }}>
@@ -309,12 +367,30 @@ const TabNEO = () => {
             <HudMono size={8} tone="steel">PHA</HudMono>
           </span>
           <HudMono size={8} tone="steel">SIZE · ∝ log(DIA)</HudMono>
-          <HudMono size={8} tone="steel">RING · MISS·LD</HudMono>
-          <HudMono size={8} tone="steel">ANGLE · APPROACH DATE</HudMono>
+          {view === 'polar' ? (
+            <>
+              <HudMono size={8} tone="steel">RING · MISS·LD</HudMono>
+              <HudMono size={8} tone="steel">ANGLE · APPROACH DATE</HudMono>
+            </>
+          ) : (
+            <>
+              <HudMono size={8} tone="steel">X · log₁₀ MISS·LD</HudMono>
+              <HudMono size={8} tone="steel">Y · log₁₀ KINETIC·KT TNT</HudMono>
+            </>
+          )}
         </div>
         <div style={{ display:'flex', justifyContent:'space-between' }}>
-          <HudMono size={8} tone="steel">RINGS · {ringStopsLD.join(' / ')} LD</HudMono>
-          <HudMono size={8} tone="steel">WINDOW · {Math.round((timeWindow.max - timeWindow.min) / 86400000)} DAYS</HudMono>
+          {view === 'polar' ? (
+            <>
+              <HudMono size={8} tone="steel">RINGS · {ringStopsLD.join(' / ')} LD</HudMono>
+              <HudMono size={8} tone="steel">WINDOW · {Math.round((timeWindow.max - timeWindow.min) / 86400000)} DAYS</HudMono>
+            </>
+          ) : (
+            <>
+              <HudMono size={8} tone="steel">ρ · 2600 KG/M³ (CHONDRITE)</HudMono>
+              <HudMono size={8} tone="steel">E = ½MV²</HudMono>
+            </>
+          )}
         </div>
       </div>
       <div style={{ display:'flex', flexDirection:'column', gap: 10, minHeight: 0 }}>
