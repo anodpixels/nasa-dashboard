@@ -2,3 +2,5 @@
 .omc/
 .playwright-mcp/
 overview-check.png
+.vercel
+.env*
