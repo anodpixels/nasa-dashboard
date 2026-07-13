@@ -204,7 +204,7 @@ const TabOverview = () => {
   const { apod, neos, donki, mars, deepsky, loading } = useData();
   const iss = useLiveISS();
   const drawer = useDrawer();
-  const [heroHover, setHeroHover] = React.useState(false);
+  const [reticleHover, setReticleHover] = React.useState(false);
 
   const openISSDetail = () => drawer.open(<ISSDetail iss={iss} />);
   const openDeepSkyDetail = () => deepsky && drawer.open(<DeepSkyDetail entry={deepsky} />);
@@ -290,8 +290,6 @@ const TabOverview = () => {
       {/* CENTER — APOD HERO */}
       <div style={{ display:'flex', flexDirection:'column', gap: 8, minWidth: 0 }}>
         <div onClick={openDeepSkyDetail}
-             onMouseEnter={() => setHeroHover(true)}
-             onMouseLeave={() => setHeroHover(false)}
              className="hud-clickable"
              style={{ flex: 1, position:'relative', border:'1px solid var(--hud-hairline)', overflow:'hidden', background:'#000', cursor:'pointer' }}>
           {deepsky ? <DeepSkyImage entry={deepsky} /> : <APODImage apod={apod} />}
@@ -317,10 +315,66 @@ const TabOverview = () => {
           <div style={{ position:'absolute', bottom: 8, left: 8, width: 18, height: 18, borderBottom:'1px solid var(--hud-ink)', borderLeft:'1px solid var(--hud-ink)' }} />
           <div style={{ position:'absolute', bottom: 8, right: 8, width: 18, height: 18, borderBottom:'1px solid var(--hud-ink)', borderRight:'1px solid var(--hud-ink)' }} />
 
-          {/* Reticle */}
-          <div style={{ position:'absolute', top: '42%', left: '58%' }}>
-            <HudReticle size={80} color="var(--hud-accent)" />
-          </div>
+          {/* Reticle — locks onto deepsky.focal, readout in grid coords */}
+          {(() => {
+            const fx = deepsky?.focal?.x ?? 0.5;
+            const fy = deepsky?.focal?.y ?? 0.5;
+            const col = Math.min(13, Math.max(1, Math.ceil(fx * 13)));
+            const row = String.fromCharCode(65 + Math.min(7, Math.max(0, Math.floor(fy * 8))));
+            const reticleSize = 80;
+            const stopAndOpen = (e) => { e.stopPropagation(); openDeepSkyDetail(); };
+            return (
+              <div
+                onClick={stopAndOpen}
+                onMouseEnter={() => setReticleHover(true)}
+                onMouseLeave={() => setReticleHover(false)}
+                style={{
+                  position:'absolute',
+                  left: `calc(${fx * 100}% - ${reticleSize/2}px)`,
+                  top:  `calc(${fy * 100}% - ${reticleSize/2}px)`,
+                  width: reticleSize, height: reticleSize,
+                  cursor:'pointer', zIndex: 3,
+                  transition:'transform 0.18s ease',
+                  transform: reticleHover ? 'scale(1.06)' : 'scale(1)',
+                }}>
+                <HudReticle size={reticleSize} color="var(--hud-accent)" />
+                {/* Grid-cell readout — pinned right of the reticle */}
+                <div style={{
+                  position:'absolute', left: reticleSize + 6, top: reticleSize/2 - 8,
+                  display:'flex', alignItems:'center', gap: 4,
+                  padding:'2px 5px', whiteSpace:'nowrap',
+                  background:'rgba(10,10,10,0.7)', border:'1px solid var(--hud-accent)',
+                }}>
+                  <HudMono size={9} tone="hot">LOCK</HudMono>
+                  <HudMono size={9} tone="ink">{row}·{col}</HudMono>
+                </div>
+                {/* Hover tooltip — target metadata */}
+                {deepsky && (
+                  <div style={{
+                    position:'absolute', left: reticleSize/2 - 110, top: reticleSize + 8,
+                    width: 220, padding:'8px 10px',
+                    background:'rgba(10,10,10,0.92)', border:'1px solid var(--hud-accent)',
+                    opacity: reticleHover ? 1 : 0,
+                    transform: `translateY(${reticleHover ? 0 : -3}px)`,
+                    transition:'opacity 0.18s ease, transform 0.18s ease',
+                    pointerEvents:'none',
+                  }}>
+                    <HudLabel size={8} tone="hot">TARGET LOCK</HudLabel>
+                    <div style={{ marginTop: 2 }}>
+                      <HudValue size={13}>{deepsky.target.toUpperCase()}</HudValue>
+                    </div>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap: 2, marginTop: 6 }}>
+                      <HudMono size={8} tone="steel">RA · {deepsky.ra}</HudMono>
+                      <HudMono size={8} tone="steel">DEC · {deepsky.dec}</HudMono>
+                      <HudMono size={8} tone="steel">DIST · {deepsky.distance}</HudMono>
+                      <HudMono size={8} tone="steel">GRID · {row}·{col}</HudMono>
+                    </div>
+                    <HudMono size={8} tone="hot" style={{ display:'block', marginTop: 6 }}>▸ CLICK FOR FULL DETAIL</HudMono>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Spinning distance rings top-right */}
           <div style={{ position:'absolute', top: 20, right: 30 }}>
@@ -347,16 +401,13 @@ const TabOverview = () => {
             </HudMono>
           </div>
 
-          {/* Hover info card — fades in on hero hover */}
+          {/* Persistent info card — always visible, hairline frame (accent on the kicker only) */}
           {deepsky && (
             <div style={{
               position:'absolute', top: 22, left: 32, maxWidth: 320,
-              background:'rgba(10,10,10,0.88)',
-              border:'1px solid var(--hud-accent)',
+              background:'rgba(10,10,10,0.78)',
+              border:'1px solid var(--hud-hairline)',
               padding:'12px 14px',
-              opacity: heroHover ? 1 : 0,
-              transform: `translateY(${heroHover ? 0 : -4}px)`,
-              transition:'opacity 0.18s ease, transform 0.18s ease',
               pointerEvents:'none',
               zIndex: 4,
             }}>

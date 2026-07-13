@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/NASA%20Dashboard.html"
+    }
+  ]
+}

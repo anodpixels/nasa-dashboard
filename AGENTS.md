@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-Guidance for Claude Code when working in this repository. Keep this file aligned with `AGENTS.md`.
+Repository instructions for coding agents. Keep this file aligned with `CLAUDE.md`.
 
 ## Project in one paragraph
 
