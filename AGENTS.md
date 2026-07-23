@@ -127,7 +127,7 @@ Do not wire `design-canvas.jsx` or `variants/` into the main HTML unless the tas
 
 The NASA API key is currently stored in browser-delivered source and must be treated as public/demo access, not a secret. Do not copy its value into documentation, logs, screenshots, or new files. A truly private key would require a server-side proxy or another backend boundary.
 
-The app depends on unpkg, Google Fonts, NASA APIs, JPL APIs, NASA image hosts, and browser network access. CDN or API failure should degrade to baked data or visual fallbacks rather than break the shell. Three.js currently lacks a Subresource Integrity hash; the other main CDN scripts include one.
+The app depends on unpkg, Google Fonts, NASA APIs, JPL APIs, NASA image hosts, Vercel Web Analytics, and browser network access. Analytics is enabled through the static-site script in `NASA Dashboard.html`; do not introduce a package manager only to load `@vercel/analytics`. CDN or API failure should degrade to baked data or visual fallbacks rather than break the shell. Three.js currently lacks a Subresource Integrity hash; the other main CDN scripts include one.
 
 ## Change discipline
 

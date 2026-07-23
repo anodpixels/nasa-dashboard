@@ -4,3 +4,4 @@
 overview-check.png
 .vercel
 .env*
+output/playwright/

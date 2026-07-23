@@ -37,6 +37,17 @@
 <script type="text/babel" src="components/globe.jsx"></script>
 <script type="text/babel" src="components/chrome.jsx?v=2"></script>
 <script type="text/babel" src="components/tabs.jsx?v=2"></script>
+
+<!-- Vercel Web Analytics — enabled only on the deployed Vercel project. -->
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  if (window.location.protocol === 'https:') {
+    const analytics = document.createElement('script');
+    analytics.defer = true;
+    analytics.src = '/_vercel/insights/script.js';
+    document.head.appendChild(analytics);
+  }
+</script>
 </head>
 <body>
 <div id="root"></div>
